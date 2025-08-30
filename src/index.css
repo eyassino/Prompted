@@ -1,0 +1,124 @@
+:root {
+    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+
+    color-scheme: light dark;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #242424;
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    --mouse-x: 0;
+    --mouse-y: 0;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at var(--mouse-x, 0%) var(--mouse-y, 0%), #1e1f36, #0b0c14);
+    overflow: hidden;
+    font-family: sans-serif;
+    color: white;
+    position: relative;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+}
+
+.main-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: calc(5px + 2vmin);
+    color: white;
+}
+
+.chat {
+    display: flex;
+    flex-direction: column;
+    font-size: calc(5px + 2vmin);
+    background: #213547;
+    color: white;
+    align-self: flex-end;
+    width: 15%;
+    max-width: 400px;
+    height: 100vh;
+    position: fixed;
+    right: 0;
+    top: 0;
+}
+
+.innerChat {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 6px;
+    color: white;
+    background: #213547;
+}
+
+.game-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 6rem;
+    font-weight: 900;
+    text-align: center;
+    margin-top: 100px;
+    background: linear-gradient(90deg, #782699, #7afcff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 5px rgba(120, 38, 153, 0.3), 0 0 10px rgba(122,252,255,0.2);
+    transition: text-shadow 0.1s ease;
+}
+
+.inputField {
+    color: white;
+}
