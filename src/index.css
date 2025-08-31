@@ -122,3 +122,19 @@ button:focus-visible {
 .inputField {
     color: white;
 }
+
+.popup {
+    position: fixed;
+    z-index: 10;
+    top: 15%;
+    left: 15%;
+    right: 15%;
+    padding: 20px;
+    color: #fff;
+    border-radius: 10px;
+    box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.7);
+    cursor: default;
+    font-size: calc(4px + 2vmin);
+    user-select:none !important;
+    backdrop-filter: blur(10px);
+}

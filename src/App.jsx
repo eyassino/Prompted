@@ -7,6 +7,7 @@ import GameScreen from "./Game/GameScreen";
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import {Button} from "@mui/material";
+import {Instructions} from "./Helper/Instructions.jsx";
 
 export default function App() {
     const [name, setName] = useState("");
@@ -19,6 +20,7 @@ export default function App() {
     const [chatHistory, setChatHistory] = useState([]);
     const [gameStarted, setGameStarted] = useState(false);
     const [altMode, setAltMode] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
 
     // On first load: get or create a persistent playerId
     useEffect(() => {
@@ -128,10 +130,15 @@ export default function App() {
         0 0 ${10 + 15*intensity}px rgba(122,252,255,${0.2 + 0.2*intensity})`;
     });
 
+    function handleShowGuide() {
+        setShowGuide(!showGuide);
+    }
+
     if (!inRoom) {
         return (
             <div className="main-body">
                 <h1 className="game-title">Prompted</h1>
+                <Instructions hidden={!showGuide} onHide={handleShowGuide} />
                 <Box sx={{ '& button': { m: 1 } }}>
                     <div>
                         <TextField
@@ -197,6 +204,8 @@ export default function App() {
                         />
                         <Button
                             sx={{
+                                paddingRight: 2 + 'em',
+                                paddingLeft: 2 + 'em',
                                 "&:hover": {
                                     backgroundColor: "rgba(255,255,255,0.05)",
                                     borderColor: "rgb(209, 44, 205)",
@@ -210,20 +219,23 @@ export default function App() {
                             Join Room
                         </Button>
                     </div>
+                    <Button
+                        sx={{
+                            float: "right",
+                            marginTop: 1 + `em`,
+                            "&:hover": {
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                borderColor: "rgb(209, 44, 205)",
+                                color: "rgb(209, 44, 205)"
+                            }
+                        }}
+                        variant="outlined"
+                        color="secondary"
+                        onClick={handleShowGuide}
+                    >
+                        Guide
+                    </Button>
                 </Box>
-                <Button
-                    sx={{
-                        "&:hover": {
-                            backgroundColor: "rgba(255,255,255,0.05)",
-                            borderColor: "rgb(209, 44, 205)",
-                            color: "rgb(209, 44, 205)"
-                        }
-                    }}
-                    variant="outlined"
-                    color="secondary"
-                >
-                    Guide
-                </Button>
             </div>
         );
     }
