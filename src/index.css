@@ -30,7 +30,6 @@ body {
     padding: 0;
     min-height: 100vh;
     background: radial-gradient(ellipse at var(--mouse-x, 0%) var(--mouse-y, 0%), #1e1f36, #0b0c14);
-    overflow: hidden;
     font-family: sans-serif;
     color: white;
     position: relative;

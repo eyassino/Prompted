@@ -6,7 +6,16 @@ import React from 'react';
 import GameScreen from "./Game/GameScreen";
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import {Button} from "@mui/material";
+import {
+    Button,
+    Card, CardContent,
+    createTheme,
+    FormControlLabel,
+    FormGroup, Grid,
+    Switch,
+    ThemeProvider, Tooltip, Typography
+} from "@mui/material";
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {Instructions} from "./Helper/Instructions.jsx";
 
 export default function App() {
@@ -102,33 +111,65 @@ export default function App() {
         }
     }
 
+    const buttonTheme = createTheme({
+        components: {
+            MuiButton: {
+                styleOverrides: {
+                    root: {
+                        "&:hover": {
+                            backgroundColor: "rgba(255,255,255,0.05)",
+                            borderColor: "rgb(209, 44, 205)",
+                            color: "rgb(209, 44, 205)"
+                        },
+                    },
+                },
+            }
+        }
+    });
+
+
+
     useEffect(() => {
         if (roomCode) localStorage.setItem("roomCode", roomCode);
     }, [roomCode]);
 
-    document.addEventListener("mousemove", e => {
-        const x = (e.clientX / window.innerWidth) * 100;
-        const y = (e.clientY / window.innerHeight) * 100;
-        const rect = document.querySelector(".game-title").getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+    useEffect(() => {
+        function handleMouseMove(e) {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
 
-        const dx = e.clientX - centerX;
-        const dy = e.clientY - centerY;
-        const distance = Math.sqrt(dx*dx + dy*dy);
+            const titleElem = document?.querySelector(".game-title");
+            if (titleElem) {
+                const rect = titleElem.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
 
-        // Glow intensity inversely proportional to distance
-        const maxDistance = 300; // pixels
-        const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
+                const dx = e.clientX - centerX;
+                const dy = e.clientY - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
 
-        document.body.style.setProperty("--mouse-x", x + "%");
-        document.body.style.setProperty("--mouse-y", y + "%");
+                // Glow intensity inversely proportional to distance
+                const maxDistance = 300; // pixels
+                const intensity = Math.max(0, (maxDistance - distance) / maxDistance);
 
-        // Update text-shadow based on intensity
-        document.querySelector(".game-title").style.textShadow = `
-        0 0 ${5 + 10*intensity}px rgba(255,126,179,${0.3 + 0.3*intensity}),
-        0 0 ${10 + 15*intensity}px rgba(122,252,255,${0.2 + 0.2*intensity})`;
-    });
+                // Update text-shadow based on intensity
+                titleElem.style.textShadow = `
+                    0 0 ${5 + 10 * intensity}px rgba(255,126,179,${0.3 + 0.3 * intensity}),
+                    0 0 ${10 + 15 * intensity}px rgba(122,252,255,${0.2 + 0.2 * intensity})`;
+            }
+
+            document.body.style.setProperty("--mouse-x", x + "%");
+            document.body.style.setProperty("--mouse-y", y + "%");
+        }
+
+        document.addEventListener("mousemove", handleMouseMove);
+
+        // Cleanup on unmount or when gameStarted changes
+        return () => {
+            document.removeEventListener("mousemove", handleMouseMove);
+        };
+    }, [gameStarted]);
+
 
     function handleShowGuide() {
         setShowGuide(!showGuide);
@@ -139,102 +180,86 @@ export default function App() {
             <div className="main-body">
                 <h1 className="game-title">Prompted</h1>
                 <Instructions hidden={!showGuide} onHide={handleShowGuide} />
-                <Box sx={{ '& button': { m: 1 } }}>
-                    <div>
-                        <TextField
-                            sx={{
-                                // Input text
-                                "& .MuiInputBase-input": { color: "white" },
-                                // Label
-                                "& .MuiInputLabel-root": { color: "white" },
-                                // Underline colors for standard variant
-                                "& .MuiInput-underline:before": {
-                                    borderBottomColor: "rgba(255,255,255,0.42)",
-                                },
-                                "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
-                                    borderBottomColor: "#fff",
-                                }
-                            }}
-                            error={badName}
-                            color="secondary"
-                            label="Your name"
-                            variant="standard"
-                            helperText={badName ? "Enter your name" : ""}
-                            value={name}
-                            required
-                            onChange={(e) => setName(e.target.value)}
-                        />
+                    <Box sx={{ '& button': { m: 1 } }}>
+                        <ThemeProvider theme={buttonTheme}>
+                        <div>
+                            <TextField
+                                sx={{
+                                    // Input text
+                                    "& .MuiInputBase-input": { color: "white" },
+                                    // Label
+                                    "& .MuiInputLabel-root": { color: "white" },
+                                    // Underline colors for standard variant
+                                    "& .MuiInput-underline:before": {
+                                        borderBottomColor: "rgba(255,255,255,0.42)",
+                                    },
+                                    "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
+                                        borderBottomColor: "#fff",
+                                    }
+                                }}
+                                error={badName}
+                                color="secondary"
+                                label="Your name"
+                                variant="standard"
+                                helperText={badName ? "Enter your name" : ""}
+                                value={name}
+                                required
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                            <Button
+                                variant="outlined"
+                                color="secondary"
+                                onClick={createRoom}
+                            >
+                                Create Room
+                            </Button>
+                        </div>
+                        <div>
+                            <TextField
+                                sx={{
+                                    // Input text
+                                    "& .MuiInputBase-input": { color: "white" },
+                                    // Label
+                                    "& .MuiInputLabel-root": { color: "white" },
+                                    // Underline colors for standard variant
+                                    "& .MuiInput-underline:before": {
+                                        borderBottomColor: "rgba(255,255,255,0.42)",
+                                    },
+                                    "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
+                                        borderBottomColor: "#fff",
+                                    }
+                                }}
+                                color="secondary"
+                                error={badCode}
+                                label="Room code"
+                                variant="standard"
+                                helperText={badCode ? "Enter a valid room code" : ""}
+                                value={roomCode}
+                                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                            />
+                            <Button
+                                sx={{
+                                    paddingRight: 2 + 'em',
+                                    paddingLeft: 2 + 'em',
+                                }}
+                                variant="outlined"
+                                color="secondary"
+                                onClick={joinRoom}
+                            >
+                                Join Room
+                            </Button>
+                        </div>
                         <Button
                             sx={{
-                                "&:hover": {
-                                    backgroundColor: "rgba(255,255,255,0.05)",
-                                    borderColor: "rgb(209, 44, 205)",
-                                    color: "rgb(209, 44, 205)"
-                                }
+                                float: "right",
                             }}
                             variant="outlined"
                             color="secondary"
-                            onClick={createRoom}
+                            onClick={handleShowGuide}
                         >
-                            Create Room
+                            Guide
                         </Button>
-                    </div>
-                    <div>
-                        <TextField
-                            sx={{
-                                // Input text
-                                "& .MuiInputBase-input": { color: "white" },
-                                // Label
-                                "& .MuiInputLabel-root": { color: "white" },
-                                // Underline colors for standard variant
-                                "& .MuiInput-underline:before": {
-                                    borderBottomColor: "rgba(255,255,255,0.42)",
-                                },
-                                "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
-                                    borderBottomColor: "#fff",
-                                }
-                            }}
-                            color="secondary"
-                            error={badCode}
-                            label="Room code"
-                            variant="standard"
-                            helperText={badCode ? "Enter a valid room code" : ""}
-                            value={roomCode}
-                            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-                        />
-                        <Button
-                            sx={{
-                                paddingRight: 2 + 'em',
-                                paddingLeft: 2 + 'em',
-                                "&:hover": {
-                                    backgroundColor: "rgba(255,255,255,0.05)",
-                                    borderColor: "rgb(209, 44, 205)",
-                                    color: "rgb(209, 44, 205)"
-                                }
-                            }}
-                            variant="outlined"
-                            color="secondary"
-                            onClick={joinRoom}
-                        >
-                            Join Room
-                        </Button>
-                    </div>
-                    <Button
-                        sx={{
-                            float: "right",
-                            marginTop: 1 + `em`,
-                            "&:hover": {
-                                backgroundColor: "rgba(255,255,255,0.05)",
-                                borderColor: "rgb(209, 44, 205)",
-                                color: "rgb(209, 44, 205)"
-                            }
-                        }}
-                        variant="outlined"
-                        color="secondary"
-                        onClick={handleShowGuide}
-                    >
-                        Guide
-                    </Button>
+                    </ThemeProvider>
                 </Box>
             </div>
         );
@@ -242,29 +267,71 @@ export default function App() {
 
     return (
         <React.Fragment>
-            {!gameStarted ?
-                <div className="main-body">
-                    <div>
-                        <h1>Room {roomCode}</h1>
-                        <h2>Players:</h2>
-                        <ul>
+            <ThemeProvider theme={buttonTheme}>
+                {!gameStarted ?
+                    <div className="main-body">
+                        <h1 className="game-title">Room {roomCode}</h1>
+                        <div>
+                            <Button
+                                style={{marginRight: 1 + 'em'}}
+                                variant="outlined"
+                                color="secondary"
+                                onClick={readyUp}
+                            >
+                                Ready Up
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                color="secondary"
+                                onClick={leaveRoom}
+                            >
+                                Leave Room
+                            </Button>
+                        </div>
+                        <FormGroup>
+                            <div style={{ marginTop: 1 + `em`}}>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            id="altMode"
+                                            onClick={handleAltMode}
+                                            checked={altMode}
+                                            color="secondary"
+                                            name="Alternate mode"
+                                            label="Alternate mode"
+                                        />
+                                    }
+                                    label="Alternate mode"
+                                    sx={{
+                                        ".MuiFormControlLabel-label": {
+                                            color: altMode ? "purple" : "white"
+                                        }
+                                    }}
+                                />
+                                <Tooltip title="One prompt mode, imposter gets censored version of the prompt">
+                                    <HelpOutlineIcon/>
+                                </Tooltip>
+                            </div>
+                        </FormGroup>
+                        <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                             {players.map((p) => (
-                                <li style={{ color: p.ready ? "green" : "white" }} key={p.playerId}>{p.name}</li>
+                                <Card style={{ backgroundColor: p.ready ?  `rgba(120, 38, 153, 0.8)` : `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
+                                    <CardContent>
+                                        <Typography style={{ color: "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
                             ))}
-                        </ul>
-                        <button style={{marginRight: 1 + 'em'}} onClick={readyUp}>
-                            Ready Up
-                        </button>
-                        <button onClick={leaveRoom}>
-                            Leave Room
-                        </button>
-                        <input id="altMode" type={"checkbox"} onClick={handleAltMode} checked={altMode}></input>
-                        <label htmlFor="altMode">Alt gamemode</label>
+                        </Grid>
                     </div>
-                </div>
-                : <GameScreen playerId={playerId} initialPlayers={players} roomCode={roomCode} altMode={altMode}/>
-            }
-        <Chat roomCode={roomCode} playerId={playerId} initialChat={chatHistory}/>
+                    : <GameScreen playerId={playerId} initialPlayers={players} roomCode={roomCode} altMode={altMode}/>
+                }
+                <Chat roomCode={roomCode} playerId={playerId} initialChat={chatHistory}/>
+            </ThemeProvider>
         </React.Fragment>
     );
 }
