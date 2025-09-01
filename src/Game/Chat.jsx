@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
+import {Button} from "@mui/material";
+import TextField from "@mui/material/TextField";
 
 export default function Chat({ roomCode, playerId, initialChat = [] }) {
     const [chatMessages, setChatMessages] = useState(initialChat);
@@ -37,7 +39,6 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
 
     return (
         <div className="chat">
-            {/* Messages Window */}
             <div className="innerChat">
                 {chatMessages.map((msg) => (
                     <div key={msg.id} style={{ marginBottom: "4px" }}>
@@ -47,22 +48,47 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
                 ))}
                 <div ref={chatEndRef} />
             </div>
-
-            {/* Input + Button */}
-            <div style={{ display: "flex" }}>
-                <input
+            <div style={{ margin: "5%", display: "flex" }}>
+                <TextField
+                    sx={{
+                        // Input text
+                        "& .MuiInputBase-input": { color: "white" },
+                        // Label
+                        "& .MuiInputLabel-root": { color: "white" },
+                        '& .MuiOutlinedInput-root': {
+                            '& fieldset': {
+                                borderColor: 'purple',
+                            },
+                            '&:hover fieldset': {
+                                borderColor: "rgb(209, 44, 205)",
+                            },
+                        }
+                    }}
                     type="text"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message..."
-                    style={{ flexGrow: 1, marginRight: "5px" }}
+                    label="Message"
+                    color="secondary"
+                    variant="outlined"
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
                             sendMessage();
                         }
                     }}
                 />
-                <button onClick={sendMessage}>Send</button>
+                <Button
+                    sx={{
+                        marginLeft: 1 + "em",
+                        backgroundColor: "#2c0e38",
+                        "&:hover": {
+                            backgroundColor: "#5a1d73",
+                        },
+                        border: "1px solid purple",
+                    }}
+                    variant="contained"
+                    color="secondary"
+                    onClick={sendMessage}
+                >Send</Button>
             </div>
         </div>
     );

@@ -83,8 +83,7 @@ button:focus-visible {
 .chat {
     display: flex;
     flex-direction: column;
-    font-size: calc(5px + 2vmin);
-    background: #213547;
+    font-size: calc(1px + 2vmin);
     color: white;
     align-self: flex-end;
     width: 15%;
@@ -98,11 +97,12 @@ button:focus-visible {
 .innerChat {
     flex-grow: 1;
     overflow-y: auto;
-    margin-bottom: 10px;
-    padding: 5px;
-    border-radius: 6px;
+    margin: 2%;
+    padding: 2%;
+    border-radius: 10px;
+    border: 2px solid purple;
     color: white;
-    background: #213547;
+    background: #2c0e38;
 }
 
 .game-title {
