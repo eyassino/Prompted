@@ -2,6 +2,10 @@ import { socket } from "../socket";
 import React, {useEffect, useState} from "react";
 import Divider from '@mui/material/Divider';
 import Stack from '@mui/material/Stack';
+import {Button, Grid} from "@mui/material";
+import TextField from "@mui/material/TextField";
+import prompts from "../assets/prompts.json";
+import {Card, CardContent, Typography} from "@mui/material";
 
 export default function GameScreen({playerId, initialPlayers, roomCode, altMode }) {
 
@@ -12,6 +16,7 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     const [currentPrompt, setCurrentPrompt] = useState("");
     const [finalPrompts, setFinalPrompts] = useState({});
     const [players, setPlayers] = useState(initialPlayers);
+    const [promptData, setPromptData] = useState({ regularPrompts: [], imposterPrompts: [] });
 
     //Player related
     const [isImposter, setIsImposter] = useState(false);
@@ -114,41 +119,120 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
         socket.emit("gameDone", {roomCode});
     };
 
+    useEffect(() => {
+        setPromptData(prompts);
+        console.log("Loaded prompts:", prompts);
+    }, []);
+
+    const pickRandomPrompts = () => {
+        const minLength = Math.min(
+            promptData.regularPrompts.length,
+            promptData.imposterPrompts.length
+        );
+        if (minLength === 0) return;
+
+        const index = Math.floor(Math.random() * minLength);
+        const regChosen = promptData.regularPrompts[index];
+        const impChosen = promptData.imposterPrompts[index];
+
+        if (altMode) {
+            setPrompt(regChosen);
+        } else {
+            setPrompt(regChosen);
+            setImpPrompt(impChosen);
+        }
+    }
+
+
     return (
         <React.Fragment>
-            <div className="main-body">Game Screen
-                <Stack
-                    direction="row"
-                    divider={<Divider orientation="vertical" flexItem />}
-                    spacing={2}
-                >
+            <div className="main-body">
+                <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                     {players.map((p) => (
-                        <li key={p.playerId}>{p.name} score: {p.score ?? 0}</li>
+                        <Card style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
+                            <CardContent>
+                                <Typography style={{ color: "white" }}>
+                                    {p.name}
+                                    <br/>
+                                    <br/>
+                                    <span>{"score: " + p.score} </span>
+                                </Typography>
+                            </CardContent>
+                        </Card>
                     ))}
-                </Stack>
+                </Grid>
                 {phase === "promptPick" ? (
                     !promptSent ? (
-                        <div style={{display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center"}}>
-                            <input
+                        <div style={{display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center", width: "100%", marginTop: 4 + "em"}}>
+                            <TextField
+                                sx={{
+                                    // Input text
+                                    "& .MuiInputBase-input": { color: "white" },
+                                    // Label
+                                    "& .MuiInputLabel-root": { color: "white" },
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': {
+                                            borderColor: 'purple',
+                                        },
+                                        '&:hover fieldset': {
+                                            borderColor: "rgb(209, 44, 205)",
+                                        },
+                                    },
+                                    width: "50%"
+                                }}
+                                color="secondary"
+                                variant="outlined"
                                 style={{marginBottom: 1 + 'em', marginTop: 1 + 'em'}}
                                 value={prompt}
-                                placeholder={"Regular Prompt"}
+                                label={altMode ? "Prompt" : "Regular Prompt"}
                                 onChange={(e) => setPrompt(e.target.value)}
                             />
                             {!altMode ? (
-                                <input
+                                <TextField
+                                    sx={{
+                                        // Input text
+                                        "& .MuiInputBase-input": { color: "white" },
+                                        // Label
+                                        "& .MuiInputLabel-root": { color: "white" },
+                                        '& .MuiOutlinedInput-root': {
+                                            '& fieldset': {
+                                                borderColor: 'purple',
+                                            },
+                                            '&:hover fieldset': {
+                                                borderColor: "rgb(209, 44, 205)",
+                                            },
+                                        },
+                                        width: "50%"
+                                    }}
+                                    color="secondary"
+                                    variant="outlined"
                                     style={{marginBottom: 1 + 'em'}}
                                     value={impPrompt}
-                                    placeholder={"Imposter's Prompt"}
+                                    label="Imposter's Prompt"
                                     onChange={(e) => setImpPrompt(e.target.value)}
                                 />
                             ) : null}
-                            <button style={{marginBottom: 1 + 'em'}} onClick={sendPrompt}>
-                                Send prompt
-                            </button>
-                            <button>
-                                Pick for me!
-                            </button>
+                            <div style={{width: "50%"}}>
+                                <Button
+                                    sx={{
+                                        float: "left"
+                                    }}
+                                    color="secondary"
+                                    variant="outlined"
+                                    onClick={pickRandomPrompts}
+                                >
+                                    Pick for me!
+                                </Button>
+                                <Button
+                                    sx={{
+                                        float: "right"
+                                    }}
+                                    color="secondary"
+                                    variant="outlined"
+                                    style={{marginBottom: 1 + 'em'}} onClick={sendPrompt}>
+                                    Send prompt
+                                </Button>
+                            </div>
                         </div>
                     ) : (
                         <div>Prompt sent! Waiting for others...</div>
@@ -166,7 +250,10 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                             onChange={e => setPlayerAnswer(e.target.value)}
                             placeholder="Your answer"
                         />
-                        <button onClick={submitAnswer}>Submit Answer</button>
+                        <Button
+                            color="secondary"
+                            variant="outlined"
+                            onClick={submitAnswer}>Submit Answer</Button>
                     </div>
                     ) : (
                     <div>Waiting for others to finish answering :)</div>
@@ -179,18 +266,22 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                         <div><strong>Answers:</strong></div>
                         <ul>
                             {answers.map((a) => (
-                                <button
+                                <Button
+                                    color="secondary"
+                                    variant="outlined"
                                     key={a.playerId}
                                     onClick={e => {
                                         votePlayer(e, a.playerId);
                                     }}
                                 >
-                                <strong>{a.name + ": " + (voteCounts[a.playerId] ?? 0) + " votes"}</strong> {"\n" + a.answer}</button>
+                                <strong>{a.name + ": " + (voteCounts[a.playerId] ?? 0) + " votes"}</strong> {"\n" + a.answer}</Button>
                             ))}
                         </ul>
-                        <button
+                        <Button
+                            color="secondary"
+                            variant="outlined"
                             onClick={lockInVote}
-                        >Lock in</button>
+                        >Lock in</Button>
                     </div>
                 ) : voted && phase === "voting" ? (
                     <div>Waiting for others to finish voting :)</div>
@@ -214,9 +305,15 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                             {players.find(p => p.playerId === imposter)?.name}
                         </div>
                         {gameDone ? (
-                            <button onClick={handleEndGame}>Results</button>
+                            <Button
+                                color="secondary"
+                                variant="outlined"
+                                onClick={handleEndGame}>Results</Button>
                         ) : (
-                            <button onClick={sendStartNextRound}>Next Round</button>
+                            <Button
+                                color="secondary"
+                                variant="outlined"
+                                onClick={sendStartNextRound}>Next Round</Button>
                         )}
                     </div>
                 )}
