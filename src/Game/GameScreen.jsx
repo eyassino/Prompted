@@ -1,7 +1,5 @@
 import { socket } from "../socket";
 import React, {useEffect, useState} from "react";
-import Divider from '@mui/material/Divider';
-import Stack from '@mui/material/Stack';
 import {Button, Grid} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
@@ -240,20 +238,44 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                 ) : null}
                 {phase === "answer" ? (
                     !playerAnswered ? (
-                    <div>
-                        <div>
-                            <strong>Your prompt:</strong> {currentPrompt}
-                            {isImposter && <span style={{color: "red"}}> (You are the imposter!)</span>}
+                    <div style={{width: "40%",marginTop: 4 + "em"}}>
+                        <div style={{width: "100%"}}>
+                            {currentPrompt}
                         </div>
-                        <input
-                            value={playerAnswer}
-                            onChange={e => setPlayerAnswer(e.target.value)}
-                            placeholder="Your answer"
-                        />
-                        <Button
-                            color="secondary"
-                            variant="outlined"
-                            onClick={submitAnswer}>Submit Answer</Button>
+                        <div style={{marginTop: 1 + "em"}}>
+                            <TextField
+                                sx={{
+                                    // Input text
+                                    "& .MuiInputBase-input": { color: "white" },
+                                    // Label
+                                    "& .MuiInputLabel-root": { color: "white" },
+                                    '& .MuiOutlinedInput-root': {
+                                        '& fieldset': {
+                                            borderColor: 'purple',
+                                        },
+                                        '&:hover fieldset': {
+                                            borderColor: "rgb(209, 44, 205)",
+                                        },
+                                    },
+                                    width: "100%",
+                                    marginRight: 1 + "em"
+                                }}
+                                color="secondary"
+                                variant="outlined"
+                                value={playerAnswer}
+                                onChange={e => setPlayerAnswer(e.target.value)}
+                                label="Your answer"
+                            />
+                            <Button
+                                sx={{
+                                    marginTop: 1 + "em",
+                                    float: "right"
+                                }}
+                                color="secondary"
+                                variant="outlined"
+                                onClick={submitAnswer}>Submit Answer
+                            </Button>
+                        </div>
                     </div>
                     ) : (
                     <div>Waiting for others to finish answering :)</div>
