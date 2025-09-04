@@ -148,3 +148,28 @@ button:focus-visible {
     opacity: 1;
     transform: translateY(0%);
 }
+
+.card-selectable {
+    display: inline-block;
+    margin: 1em;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+    min-width: 50%;
+}
+
+@keyframes twitch {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-1px);
+    }
+    75% {
+        transform: translateX(1px);
+    }
+}
+
+.card-selectable:hover {
+    transform: scale(1.05);
+    animation: twitch 0.3s ease-in-out infinite;
+}

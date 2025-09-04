@@ -25,6 +25,7 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     const [votedOut, setVotedOut] = useState(null);
     const [imposter, setImposter] = useState("");
     const [selectedPlayer, setSelectedPlayer] = useState("");
+    const [fakePlayer, setFakePlayer] = useState("");
 
     //flags
     const [phase, setPhase] = useState("promptPick");
@@ -33,6 +34,7 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     const [gameDone, setGameDone] = useState(false);
     const [tie, setTie] = useState(false);
     const [typingIsDone, setTypingIsDone] = useState(false);
+    const [fakeOut, setFakeOut] = useState(false);
 
     //counters
     const [finalVotes, setFinalVotes] = useState({});
@@ -55,12 +57,13 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
             setIsImposter(isImposter);
             setPhase("answer");
         });
-        socket.on("revealAnswers", (answers) => {
+        socket.on("revealAnswers", (answers, currentPrompt) => {
             setVoteCounts(Object.fromEntries(answers.map(a => [a.playerId, 0])));
             setAnswers(answers);
+            setCurrentPrompt(currentPrompt)
             setPhase("voting");
         });
-        socket.on("revealData", ({votedOut, votes, prompts, imposter, players}) => {
+        socket.on("revealData", ({votedOut, votes, prompts, imposter, players, fakeOut, fakePlayer}) => {
             if(votedOut === null){
                 setTie(true);
             }
@@ -69,6 +72,8 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
             setFinalPrompts(prompts);
             setImposter(imposter);
             setPlayers(players);
+            setFakeOut(fakeOut);
+            setFakePlayer(fakePlayer);
             setPhase("reveal");
         });
         socket.on("voteUpdate", (voteCount) => {
@@ -123,7 +128,6 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
 
     useEffect(() => {
         setPromptData(prompts);
-        console.log("Loaded prompts:", prompts);
     }, []);
 
     const pickRandomPrompts = () => {
@@ -165,7 +169,7 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                                     {p.name}
                                     <br/>
                                     <br/>
-                                    <span>{"score: " + p.score} </span>
+                                    <span>{"points: " + p.score} </span>
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -304,7 +308,8 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                             <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                             {answers.map((a) => (
                                 <Card
-                                    style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`, cursor: "pointer" }}
+                                    className="card-selectable"
+                                    style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`}}
                                     key={a.playerId}
                                     onClick={e => {
                                     votePlayer(e, a.playerId);
@@ -340,7 +345,7 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                     <div>
                         <div>
                             <strong>The <span style={{color: "red"}}>imposter</span> was: </strong>
-                            <TypingText typingDone={handleTypingDone} fakeOut={true} eraseText={"emil"} finalText={players.find(p => p.playerId === imposter)?.name}/>
+                            <TypingText typingDone={handleTypingDone} fakeOut={fakeOut} eraseText={fakeOut ? fakePlayer : players.find(p => p.playerId === imposter)?.name} finalText={players.find(p => p.playerId === imposter)?.name}/>
                         </div>
                         <br/>
                         <div><strong style={{color: "green"}}>Prompt:</strong> {finalPrompts.prompt}</div>
@@ -365,8 +370,8 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                                         </CardContent>
                                     </Card>
                                 </div>
-                                {typingIsDone ? (
-                                <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
+                                {typingIsDone && votedOut.playerId !== imposter ? (
+                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
                                 ): null}
                             </React.Fragment>
                         ) : (
