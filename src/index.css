@@ -137,3 +137,14 @@ button:focus-visible {
     user-select:none !important;
     backdrop-filter: blur(10px);
 }
+
+.fadeUp {
+    opacity: 0;
+    transform: translateY(5%);
+    transition: transform 0.5s ease-out, opacity 1s ease-out;
+}
+
+.fadeUp.fade-in {
+    opacity: 1;
+    transform: translateY(0%);
+}
