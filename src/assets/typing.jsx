@@ -61,7 +61,7 @@ const TypingText = ({
     }, phase === "deleting" ? eraseSpeed : speed);
 
     return () => clearInterval(interval);
-  }, [currentIndex, phase, typingDone]);
+  }, [currentIndex, eraseText, fakeOut, finalText, phase, typingDone]);
 
   useEffect(() => {
           const cursorInterval = setInterval(() => {

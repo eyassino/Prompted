@@ -6,6 +6,7 @@ import prompts from "../assets/prompts.json";
 import {Card, CardContent, Typography} from "@mui/material";
 import TypingText from "../assets/typing.jsx";
 import { useInView } from "react-intersection-observer";
+import { BarChart } from '@mui/x-charts/BarChart';
 
 export default function GameScreen({playerId, initialPlayers, roomCode, altMode }) {
 
@@ -19,7 +20,6 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     const [promptData, setPromptData] = useState({ regularPrompts: [], imposterPrompts: [] });
 
     //Player related
-    const [isImposter, setIsImposter] = useState(false);
     const [playerAnswer, setPlayerAnswer] = useState("");
     const [answers, setAnswers] = useState([]);
     const [votedOut, setVotedOut] = useState(null);
@@ -47,14 +47,8 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     };
 
     useEffect(() => {
-        socket.on("allPromptsReceived", ({ prompt, isImposter }) => {
+        socket.on("allPromptsReceived", ({ prompt }) => {
             setCurrentPrompt(prompt);
-            setIsImposter(isImposter);
-            setPhase("answer");
-        });
-        socket.on("promptToAnswer", ({ prompt, isImposter }) => {
-            setCurrentPrompt(prompt);
-            setIsImposter(isImposter);
             setPhase("answer");
         });
         socket.on("revealAnswers", (answers, currentPrompt) => {
@@ -82,9 +76,8 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
         socket.on("noPromptsLeft", () => {
             setGameDone(true);
         });
-        socket.on("startNextRound", ({ prompt, isImposter }) => {
+        socket.on("startNextRound", ({ prompt }) => {
             setCurrentPrompt(prompt);
-            setIsImposter(isImposter);
             setPlayerAnswered(false);
             setPlayerAnswer("");
             setPromptSent(false);
@@ -397,11 +390,67 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                     </div>
                 )}
                 {phase === "done" && (
-                    <ul>
-                        {players.map((p) => (
-                            <li key={p.playerId}><strong>{p.name} with a score of {p.score ?? 0}</strong></li>
-                        ))}
-                    </ul>
+                    <>
+                        {(() => {
+                            const names = players.map(p => p.name);
+                            const scores = players.map(p => p.score);
+                            const maxScore = Math.max(...scores);
+
+                            const barColors = players.map(p =>
+                                p.score === maxScore ? "#ffd700" : "#782699"
+                            );
+
+                            return (
+                                <div style={{ maxWidth: 500, margin: "2em auto" }}>
+                                    <BarChart
+                                        xAxis={[
+                                            {
+                                                data: names,
+                                                tickLabelStyle: { fill: "white" },
+                                                labelStyle: { fill: "white" },
+                                                colorMap: {
+                                                    type: "ordinal",
+                                                    values: names,
+                                                    colors: barColors,
+                                                },
+                                            }
+                                        ]}
+                                        yAxis={[{ position: 'none' }]}
+                                        series={[
+                                            {
+                                                data: scores
+                                            }
+                                        ]}
+                                        height={300}
+                                        sx={{
+                                            "& .MuiChartsAxis-tickLabel": { fill: "white" },
+                                            "& .MuiChartsLegend-label": { color: "white" }
+                                        }}
+                                    />
+                                    <div style={{textAlign: "center", color: "#ffd700", marginTop: 12}}>
+                                        Winner{players.filter(p=>p.score===maxScore).length > 1 ? "s" : ""}:{" "}
+                                        {players.filter(p=>p.score===maxScore).map(p=>p.name).join(", ")}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                        <div style={{width: "50%"}}>
+                            <Button
+                                sx={{
+                                    float: "right"
+                                }}
+                                color="secondary"
+                                variant="outlined"
+                            >Play again</Button>
+                            <Button
+                            sx={{
+                                float: "left"
+                            }}
+                            color="secondary"
+                            variant="outlined"
+                            >Leave Lobby</Button>
+                        </div>
+                    </>
                 )}
             </div>
         </React.Fragment>
