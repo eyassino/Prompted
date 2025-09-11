@@ -65,7 +65,7 @@ export default function App() {
     });
 
     const createRoom = () => {
-        if (!name) return setBadName(true); else {setBadName(false);}
+        if (!name || name.length > 15) return setBadName(true); else {setBadName(false);}
         socket.emit("createRoom", name, playerId, (code) => {
             setRoomCode(code);
             setInRoom(true);
@@ -73,7 +73,7 @@ export default function App() {
     };
 
     const joinRoom = () => {
-        if (!roomCode) return setBadCode(true); else {setBadCode(false);}
+        if (!roomCode || roomCode.length > 4) return setBadCode(true); else {setBadCode(false);}
         socket.emit(
             "joinRoom",
             { roomCode, playerName: name, playerId },
@@ -81,9 +81,6 @@ export default function App() {
                 if (res.success) {
                     setInRoom(true);
                     setChatHistory(res.chat || []);
-                    if (res.rejoined) {
-                        console.log("Rejoined existing session as", res.name);
-                    }
                 } else {
                     setBadCode(true);
                 }
@@ -201,9 +198,10 @@ export default function App() {
                                 color="secondary"
                                 label="Your name"
                                 variant="standard"
-                                helperText={badName ? "Enter your name" : ""}
+                                helperText={badName ? name.length > 15 ? "Enter a shorter name" : "Enter a valid name" : ""}
                                 value={name}
                                 required
+                                slotProps={{ htmlInput: { maxLength: 15 } }}
                                 onChange={(e) => setName(e.target.value)}
                             />
                             <Button
@@ -235,6 +233,7 @@ export default function App() {
                                 variant="standard"
                                 helperText={badCode ? "Enter a valid room code" : ""}
                                 value={roomCode}
+                                slotProps={{ htmlInput: { maxLength: 4 } }}
                                 onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                             />
                             <Button
