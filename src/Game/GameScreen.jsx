@@ -35,6 +35,9 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     const [tie, setTie] = useState(false);
     const [typingIsDone, setTypingIsDone] = useState(false);
     const [fakeOut, setFakeOut] = useState(false);
+    const [badPrompt, setBadPrompt] = useState(false);
+    const [badImpPrompt, setImpBadPrompt] = useState(false);
+    const [badAnswer, setBadAnswer] = useState(false);
 
     //counters
     const [finalVotes, setFinalVotes] = useState({});
@@ -42,7 +45,17 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
 
 
     const sendPrompt = () => {
-        socket.emit("sendPrompt", {roomCode, playerId, prompt, impPrompt });
+        if(!prompt || prompt.length > 115) {
+            return setBadPrompt(true);
+        } else {
+            setBadPrompt(false);
+        }
+        if((!impPrompt && !altMode) || (impPrompt.length > 115 && altMode)) {
+            return setImpBadPrompt(true);
+        } else {
+            setImpBadPrompt(false);
+        }
+        socket.emit("sendPrompt", {roomCode, playerId, prompt, impPrompt});
         setPromptSent(true);
     };
 
@@ -95,6 +108,11 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     }, []);
 
     const submitAnswer = () => {
+        if(!playerAnswer || playerAnswer.length > 115) {
+            return setBadAnswer(true);
+        } else {
+            setBadAnswer(false);
+        }
         socket.emit("submitAnswer", { roomCode, playerId, answer: playerAnswer });
         setPlayerAnswered(true);
     };
@@ -192,6 +210,9 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                                 style={{marginBottom: 1 + 'em', marginTop: 1 + 'em'}}
                                 value={prompt}
                                 label={altMode ? "Prompt" : "Regular Prompt"}
+                                error={badPrompt}
+                                helperText={badPrompt ? prompt.length > 115 ? "Enter a shorter prompt" : "Enter a prompt" : ""}
+                                slotProps={{ htmlInput: { maxLength: 115 } }}
                                 onChange={(e) => setPrompt(e.target.value)}
                             />
                             {!altMode ? (
@@ -216,6 +237,9 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                                     style={{marginBottom: 1 + 'em'}}
                                     value={impPrompt}
                                     label="Imposter's Prompt"
+                                    error={badImpPrompt}
+                                    helperText={badImpPrompt ? impPrompt.length > 115 ? "Enter a shorter prompt" : "Enter an imposter prompt" : ""}
+                                    slotProps={{ htmlInput: { maxLength: 115 } }}
                                     onChange={(e) => setImpPrompt(e.target.value)}
                                 />
                             ) : null}
@@ -272,6 +296,9 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                                 color="secondary"
                                 variant="outlined"
                                 value={playerAnswer}
+                                error={badAnswer}
+                                helperText={badAnswer ? playerAnswer.length > 115 ? "Enter a shorter answer" : "Enter an answer" : ""}
+                                slotProps={{ htmlInput: { maxLength: 115 } }}
                                 onChange={e => setPlayerAnswer(e.target.value)}
                                 label="Your answer"
                             />
