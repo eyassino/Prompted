@@ -93,6 +93,7 @@ export default function App() {
         socket.emit("leaveRoom", { roomCode, playerId });
         setInRoom(false);
         setRoomCode("");
+        setGameStarted(false);
         localStorage.removeItem("roomCode");
     };
 
@@ -124,6 +125,16 @@ export default function App() {
         }
     });
 
+    const handleLeaveLobbyFromGame = () => {
+        leaveRoom();
+    };
+
+    const handlePlayAgainFromGame = () => {
+        setGameStarted(false);
+        if (roomCode) {
+            socket.emit("playAgain", { roomCode });
+        }
+    };
 
 
     useEffect(() => {
@@ -327,7 +338,14 @@ export default function App() {
                             ))}
                         </Grid>
                     </div>
-                    : <GameScreen playerId={playerId} initialPlayers={players} roomCode={roomCode} altMode={altMode}/>
+                    : <GameScreen
+                        playerId={playerId}
+                        initialPlayers={players}
+                        roomCode={roomCode}
+                        altMode={altMode}
+                        onLeaveLobby={handleLeaveLobbyFromGame}
+                        onPlayAgain={handlePlayAgainFromGame}
+                    />
                 }
                 <Chat roomCode={roomCode} playerId={playerId} initialChat={chatHistory}/>
             </ThemeProvider>

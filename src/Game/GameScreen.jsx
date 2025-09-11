@@ -3,12 +3,19 @@ import React, {useEffect, useState} from "react";
 import {Button, Grid} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
-import {Card, CardContent, Typography} from "@mui/material";
+import {Card, CardContent, Typography, Badge} from "@mui/material";
 import TypingText from "../assets/typing.jsx";
 import { useInView } from "react-intersection-observer";
 import { BarChart } from '@mui/x-charts/BarChart';
 
-export default function GameScreen({playerId, initialPlayers, roomCode, altMode }) {
+export default function GameScreen({
+                                       playerId,
+                                       initialPlayers,
+                                       roomCode,
+                                       altMode,
+                                       onLeaveLobby,
+                                       onPlayAgain
+                                   }) {
 
     //Prompts
     const [prompt, setPrompt] = useState("");
@@ -105,6 +112,19 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
             setPlayers(players);
             setPhase("done");
         });
+        socket.on("lobbyReset", () => {
+            setPlayerAnswered(false);
+            setPlayerAnswer("");
+            setPromptSent(false);
+            setVoted(false);
+            setSelectedPlayer("");
+            setVotedOut(null);
+            setTie(false);
+            setTypingIsDone(false);
+            setFakeOut(false);
+            setGameDone(false);
+            setPhase("promptPick");
+        });
     }, []);
 
     const submitAnswer = () => {
@@ -124,7 +144,6 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
     };
 
     const votePlayer = (e, selectedPlayer) => {
-        e.currentTarget.style.backgroundColor = "purple";
         setSelectedPlayer(selectedPlayer);
         socket.emit("votePlayer", {roomCode, playerId, votedPlayerId: selectedPlayer});
     };
@@ -174,15 +193,14 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
             <div className="main-body">
                 <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                     {players.map((p) => (
-                        <Card style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
-                            <CardContent>
-                                <Typography style={{ color: "white" }}>
-                                    {p.name}
-                                    <br/>
-                                    <br/>
-                                    <span>{"points: " + p.score} </span>
-                                </Typography>
-                            </CardContent>
+                        <Card sx={{ overflow: "visible" }} style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
+                            <Badge badgeContent={p.score} color="secondary" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                                <CardContent>
+                                    <Typography style={{ color: "white" }}>
+                                        {p.name}
+                                    </Typography>
+                                </CardContent>
+                           </Badge>
                         </Card>
                     ))}
                 </Grid>
@@ -328,38 +346,42 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                             <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                             {answers.map((a) => (
                                 <Card
+                                    sx={{ overflow: "visible" }}
                                     className="card-selectable"
-                                    style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`}}
+                                    style={{ backgroundColor: selectedPlayer === a.playerId ? "purple" : `rgba(120, 38, 153, 0.3)`}}
                                     key={a.playerId}
                                     onClick={e => {
-                                    votePlayer(e, a.playerId);
+                                    if (!voted)
+                                        votePlayer(e, a.playerId);
                                 }}>
-                                    <CardContent>
-                                        <Typography style={{ color: "white" }}>
-                                            {a.name}
-                                            <br/>
-                                            <br/>
-                                            <span>{a.answer} </span>
-                                        </Typography>
-                                    </CardContent>
+                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
+                                        <CardContent>
+                                            <Typography style={{ color: "white" }}>
+                                                {a.name}
+                                                <br/>
+                                                <br/>
+                                                <span>{a.answer} </span>
+                                            </Typography>
+                                        </CardContent>
+                                    </Badge>
                                 </Card>
                             ))}
                             </Grid>
                         </ul>
-                        <Button
-                            sx={{
-                                marginTop: 1 + "em",
-                                marginRight: "20%",
-                                float: "right"
-                            }}
-                            disabled={!selectedPlayer}
-                            color="secondary"
-                            variant="outlined"
-                            onClick={lockInVote}
-                        >Lock in</Button>
+                        {!voted ? (
+                            <Button
+                                sx={{
+                                    marginTop: 1 + "em",
+                                    marginRight: "20%",
+                                    float: "right"
+                                }}
+                                disabled={!selectedPlayer}
+                                color="secondary"
+                                variant="outlined"
+                                onClick={lockInVote}
+                            >Lock in</Button>
+                        ) : null}
                     </div>
-                ) : voted && phase === "voting" ? (
-                    <div>Waiting for others to finish voting :)</div>
                 ) : null}
                 {phase === "reveal" && (
                     <div>
@@ -468,13 +490,21 @@ export default function GameScreen({playerId, initialPlayers, roomCode, altMode 
                                 }}
                                 color="secondary"
                                 variant="outlined"
+                                onClick={() => {
+                                    if (roomCode) socket.emit("playAgain", { roomCode });
+                                    onPlayAgain?.();
+                                }}
                             >Play again</Button>
                             <Button
-                            sx={{
-                                float: "left"
-                            }}
-                            color="secondary"
-                            variant="outlined"
+                                sx={{
+                                    float: "left"
+                                }}
+                                color="secondary"
+                                variant="outlined"
+                                onClick={() => {
+                                    if (roomCode) socket.emit("leaveRoom", { roomCode, playerId });
+                                    onLeaveLobby?.();
+                                }}
                             >Leave Lobby</Button>
                         </div>
                     </>
