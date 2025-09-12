@@ -3,7 +3,7 @@ import React, {useEffect, useState} from "react";
 import {Button, Grid} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
-import {Card, CardContent, Typography, Badge} from "@mui/material";
+import {Card, CardContent, Typography, Badge, FormControlLabel, Switch} from "@mui/material";
 import TypingText from "../assets/typing.jsx";
 import { useInView } from "react-intersection-observer";
 import { BarChart } from '@mui/x-charts/BarChart';
@@ -14,7 +14,8 @@ export default function GameScreen({
                                        roomCode,
                                        altMode,
                                        onLeaveLobby,
-                                       onPlayAgain
+                                       onPlayAgain,
+                                       lobbyLeader
                                    }) {
 
     //Prompts
@@ -45,10 +46,12 @@ export default function GameScreen({
     const [badPrompt, setBadPrompt] = useState(false);
     const [badImpPrompt, setImpBadPrompt] = useState(false);
     const [badAnswer, setBadAnswer] = useState(false);
+    const [keepScores, setKeepScores] = useState(false);
 
     //counters
     const [finalVotes, setFinalVotes] = useState({});
     const [voteCounts, setVoteCounts] = useState({});
+    const [playAgainCount, setPlayAgainCount] = useState(0);
 
 
     const sendPrompt = () => {
@@ -67,6 +70,9 @@ export default function GameScreen({
     };
 
     useEffect(() => {
+        socket.on("updatePlayers", (players) => {
+            setPlayers(players);
+        })
         socket.on("allPromptsReceived", ({ prompt }) => {
             setCurrentPrompt(prompt);
             setPhase("answer");
@@ -112,6 +118,12 @@ export default function GameScreen({
             setPlayers(players);
             setPhase("done");
         });
+        socket.on("updateKeepScore", (keepScores) => {
+            setKeepScores(keepScores);
+        })
+        socket.on("updatePlayAgainCount", (voteCount) => {
+            setPlayAgainCount(voteCount);
+        })
         socket.on("lobbyReset", () => {
             setPlayerAnswered(false);
             setPlayerAnswer("");
@@ -123,6 +135,10 @@ export default function GameScreen({
             setTypingIsDone(false);
             setFakeOut(false);
             setGameDone(false);
+            setKeepScores(false);
+            setPlayAgainCount(0);
+            setPrompt("");
+            setImpPrompt("");
             setPhase("promptPick");
         });
     }, []);
@@ -149,11 +165,15 @@ export default function GameScreen({
     };
 
     const sendStartNextRound = () => {
-        socket.emit("nextRound", {roomCode});
+        if (lobbyLeader) {
+            socket.emit("nextRound", {roomCode});
+        }
     };
 
     const handleEndGame = () => {
-        socket.emit("gameDone", {roomCode});
+        if (lobbyLeader) {
+            socket.emit("gameDone", {roomCode});
+        }
     };
 
     useEffect(() => {
@@ -188,15 +208,32 @@ export default function GameScreen({
         threshold: 0.5
     });
 
+    const handlePlayAgain = () => {
+        if (lobbyLeader) {
+            if (roomCode) socket.emit("playAgain", {roomCode, keepScores});
+            onPlayAgain?.(keepScores);
+        }
+        else {
+            socket.emit("playAgainVote", { roomCode, playerId });
+        }
+    }
+
+    const handleKeepScore = () => {
+        if (!lobbyLeader) return;
+            const next = !keepScores; // Avoid race condition with emit
+            setKeepScores(next);
+            socket.emit("keepScore", { roomCode, keepScores: next });
+    }
+
     return (
         <React.Fragment>
             <div className="main-body">
                 <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                     {players.map((p) => (
-                        <Card sx={{ overflow: "visible" }} style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
-                            <Badge badgeContent={p.score} color="secondary" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}>
+                        <Card sx={{ overflow: "visible" }} style={{ backgroundColor: p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
+                            <Badge badgeContent={p.score} color="secondary" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} showZero={true}>
                                 <CardContent>
-                                    <Typography style={{ color: "white" }}>
+                                    <Typography style={{ color: p.leader ? "black" : "white" }}>
                                         {p.name}
                                     </Typography>
                                 </CardContent>
@@ -338,7 +375,7 @@ export default function GameScreen({
                 {phase === "voting" ? (
                     <div>
                         <div style={{textAlign: "center", marginRight: "20%"}}>
-                            <div>Discuss! who do you think the imposter is?</div>
+                            <div>{voted ? "Voted! Waiting for everyone to finish voting..." : "Discuss! who do you think the imposter is?"}</div>
                             <br/>
                             <div><strong>The prompt was:</strong> {currentPrompt} </div>
                         </div>
@@ -354,7 +391,7 @@ export default function GameScreen({
                                     if (!voted)
                                         votePlayer(e, a.playerId);
                                 }}>
-                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
+                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}} showZero={true}>
                                         <CardContent>
                                             <Typography style={{ color: "white" }}>
                                                 {a.name}
@@ -426,6 +463,7 @@ export default function GameScreen({
                                 }}
                                 color="secondary"
                                 variant="outlined"
+                                disabled={!lobbyLeader}
                                 onClick={handleEndGame}>Results</Button>
                         ) : (
                             <Button
@@ -434,6 +472,7 @@ export default function GameScreen({
                                 }}
                                 color="secondary"
                                 variant="outlined"
+                                disabled={!lobbyLeader}
                                 onClick={sendStartNextRound}>Next Round</Button>
                         )}
                     </div>
@@ -470,6 +509,7 @@ export default function GameScreen({
                                                 data: scores
                                             }
                                         ]}
+                                        borderRadius={40}
                                         height={300}
                                         sx={{
                                             "& .MuiChartsAxis-tickLabel": { fill: "white" },
@@ -486,17 +526,6 @@ export default function GameScreen({
                         <div style={{width: "50%"}}>
                             <Button
                                 sx={{
-                                    float: "right"
-                                }}
-                                color="secondary"
-                                variant="outlined"
-                                onClick={() => {
-                                    if (roomCode) socket.emit("playAgain", { roomCode });
-                                    onPlayAgain?.();
-                                }}
-                            >Play again</Button>
-                            <Button
-                                sx={{
                                     float: "left"
                                 }}
                                 color="secondary"
@@ -506,6 +535,40 @@ export default function GameScreen({
                                     onLeaveLobby?.();
                                 }}
                             >Leave Lobby</Button>
+                            <div style={{float: "right"}}>
+                                <Badge badgeContent={playAgainCount} color="secondary" anchorOrigin={{ vertical: "top", horizontal: "right"}}>
+                                    <Button
+                                        color="secondary"
+                                        variant="outlined"
+                                        onClick={handlePlayAgain}
+                                    >
+                                        Play again
+                                    </Button>
+                                </Badge>
+                            </div>
+                        </div>
+                        <div style={{width: "50%", marginTop: 1 + "em"}}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        id="keepScores"
+                                        onChange={handleKeepScore}
+                                        checked={keepScores}
+                                        color="secondary"
+                                        name="Keep scores"
+                                        label="Keep scores"
+                                        disabled={!lobbyLeader}
+                                    />
+                                }
+                                label="Keep scores?"
+                                labelPlacement="top"
+                                sx={{
+                                    float: "right",
+                                    ".MuiFormControlLabel-label": {
+                                        color: keepScores ? "purple" : "white"
+                                    }
+                                }}
+                            />
                         </div>
                     </>
                 )}
