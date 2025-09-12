@@ -30,6 +30,7 @@ export default function App() {
     const [gameStarted, setGameStarted] = useState(false);
     const [altMode, setAltMode] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
+    const [lobbyLeader, setLobbyLeader] = useState(false);
 
     // On first load: get or create a persistent playerId
     useEffect(() => {
@@ -69,6 +70,7 @@ export default function App() {
         socket.emit("createRoom", name, playerId, (code) => {
             setRoomCode(code);
             setInRoom(true);
+            setLobbyLeader(true);
         });
     };
 
@@ -84,6 +86,9 @@ export default function App() {
                 } else {
                     setBadCode(true);
                 }
+                if (res.leader) {
+                    setLobbyLeader(true);
+                }
             }
         );
     };
@@ -93,6 +98,7 @@ export default function App() {
         socket.emit("leaveRoom", { roomCode, playerId });
         setInRoom(false);
         setRoomCode("");
+        setGameStarted(false);
         localStorage.removeItem("roomCode");
     };
 
@@ -101,6 +107,7 @@ export default function App() {
     }
 
     const handleAltMode = () => {
+        if(!lobbyLeader) return;
         const next = !altMode; // Avoid race condition with emit
         setAltMode(next);
         if (roomCode) {
@@ -124,6 +131,15 @@ export default function App() {
         }
     });
 
+    const handleLeaveLobbyFromGame = () => {
+        leaveRoom();
+    };
+
+    const handlePlayAgainFromGame = (keepScores) => {
+        if (roomCode) {
+            socket.emit("playAgain", { roomCode, keepScores });
+        }
+    };
 
 
     useEffect(() => {
@@ -298,6 +314,7 @@ export default function App() {
                                             color="secondary"
                                             name="Alternate mode"
                                             label="Alternate mode"
+                                            disabled={lobbyLeader ? "" : "disabled"}
                                         />
                                     }
                                     label="Alternate mode"
@@ -314,9 +331,16 @@ export default function App() {
                         </FormGroup>
                         <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                             {players.map((p) => (
-                                <Card style={{ backgroundColor: p.ready ?  `rgba(120, 38, 153, 0.8)` : `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
                                     <CardContent>
-                                        <Typography style={{ color: "white" }}>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
                                             {p.name}
                                             <br/>
                                             <br/>
@@ -327,7 +351,15 @@ export default function App() {
                             ))}
                         </Grid>
                     </div>
-                    : <GameScreen playerId={playerId} initialPlayers={players} roomCode={roomCode} altMode={altMode}/>
+                    : <GameScreen
+                        playerId={playerId}
+                        initialPlayers={players}
+                        roomCode={roomCode}
+                        altMode={altMode}
+                        onLeaveLobby={handleLeaveLobbyFromGame}
+                        onPlayAgain={handlePlayAgainFromGame}
+                        lobbyLeader={lobbyLeader}
+                    />
                 }
                 <Chat roomCode={roomCode} playerId={playerId} initialChat={chatHistory}/>
             </ThemeProvider>
