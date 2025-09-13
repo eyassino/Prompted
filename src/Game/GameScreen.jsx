@@ -396,7 +396,7 @@ export default function GameScreen({
                                     if (!voted)
                                         votePlayer(e, a.playerId);
                                 }}>
-                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}} showZero={true}>
+                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
                                         <CardContent>
                                             <Typography style={{ color: "white" }}>
                                                 {a.name}
@@ -421,7 +421,7 @@ export default function GameScreen({
                                         votePlayer(e, "0");
                                 }}
                             >
-                                <Badge badgeContent={voteCounts["0"]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}} showZero={true}>
+                                <Badge badgeContent={voteCounts["0"]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
                                     <CardContent>
                                         <Typography sx={{ color: "white", textAlign: "center"}}>
                                             {"No imposter this round!"}
