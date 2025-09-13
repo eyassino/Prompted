@@ -14,8 +14,7 @@ export default function GameScreen({
                                        roomCode,
                                        altMode,
                                        onLeaveLobby,
-                                       onPlayAgain,
-                                       lobbyLeader
+                                       onPlayAgain
                                    }) {
 
     //Prompts
@@ -34,6 +33,7 @@ export default function GameScreen({
     const [imposter, setImposter] = useState([]);
     const [selectedPlayer, setSelectedPlayer] = useState([]);
     const [fakePlayer, setFakePlayer] = useState("");
+    const [lobbyLeader, setLobbyLeader] = useState(players.find(p => p.leader && p.playerId === playerId) !== undefined);
 
     //flags
     const [phase, setPhase] = useState("promptPick");
@@ -47,6 +47,7 @@ export default function GameScreen({
     const [badImpPrompt, setImpBadPrompt] = useState(false);
     const [badAnswer, setBadAnswer] = useState(false);
     const [keepScores, setKeepScores] = useState(false);
+    const [badVote, setBadVote] = useState(false);
 
     //counters
     const [finalVotes, setFinalVotes] = useState({});
@@ -72,6 +73,7 @@ export default function GameScreen({
     useEffect(() => {
         socket.on("updatePlayers", (players) => {
             setPlayers(players);
+            setLobbyLeader(players.find(p => p.leader && p.playerId === playerId) !== undefined)
         })
         socket.on("allPromptsReceived", ({ prompt }) => {
             setCurrentPrompt(prompt);
@@ -156,7 +158,10 @@ export default function GameScreen({
     };
 
     const lockInVote = () => {
-        if (!selectedPlayer.length) return alert("Select a player to vote for!");
+        if (!selectedPlayer.length) {
+            setBadVote(true);
+            return;
+        }
         socket.emit("submitVote", { roomCode, playerId });
         setVoted(true);
     };
@@ -164,6 +169,7 @@ export default function GameScreen({
     const votePlayer = (e, selection) => {
         if (!selectedPlayer.includes(selection)) {
             selectedPlayer.push(selection);
+            setBadVote(false);
         } else {
             selectedPlayer.splice(selectedPlayer.indexOf(selection), 1);
         }
@@ -431,17 +437,19 @@ export default function GameScreen({
                             </Card>
                         </Stack>
                         {!voted ? (
-                            <Button
-                                sx={{
-                                    marginTop: 1 + "em",
-                                    marginRight: "20%",
-                                    float: "right"
-                                }}
-                                disabled={!selectedPlayer}
-                                color="secondary"
-                                variant="outlined"
-                                onClick={lockInVote}
-                            >Lock in</Button>
+                            <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", paddingRight: "20%", float: "right", minWidth: "50%"}}>
+                                <Button
+                                    sx={{
+                                        float: "right"
+                                    }}
+                                    color={badVote ? "error" :"secondary"}
+                                    variant="outlined"
+                                    onClick={lockInVote}
+                                >Lock in</Button>
+                                {badVote ? (
+                                <span style={{color: "darkred", marginTop: 1 + "em"}}>Vote for something!</span>
+                                ) : null}
+                            </Stack>
                         ) : null}
                     </div>
                 ) : null}

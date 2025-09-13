@@ -43,11 +43,11 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        socket.on("updatePlayers", (players) => {
-            setPlayers(players);
+        socket.on("updatePlayers", (updatedPlayers) => {
+            setPlayers(updatedPlayers);
+            setLobbyLeader(updatedPlayers.find(p => p.leader && p.playerId === playerId) !== undefined);
         });
-        return () => socket.off("updatePlayers");
-    }, []);
+    }, [playerId]);
 
     useEffect(() => {
         const handleStartGame = (serverPlayers) => {
@@ -70,7 +70,6 @@ export default function App() {
         socket.emit("createRoom", name, playerId, (code) => {
             setRoomCode(code);
             setInRoom(true);
-            setLobbyLeader(true);
         });
     };
 
@@ -358,7 +357,6 @@ export default function App() {
                         altMode={altMode}
                         onLeaveLobby={handleLeaveLobbyFromGame}
                         onPlayAgain={handlePlayAgainFromGame}
-                        lobbyLeader={lobbyLeader}
                     />
                 }
                 <Chat roomCode={roomCode} playerId={playerId} initialChat={chatHistory}/>
