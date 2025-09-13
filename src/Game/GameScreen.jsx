@@ -1,6 +1,6 @@
 import { socket } from "../socket";
 import React, {useEffect, useState} from "react";
-import {Button, Grid} from "@mui/material";
+import {Button, Grid, Stack} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
 import {Card, CardContent, Typography, Badge, FormControlLabel, Switch} from "@mui/material";
@@ -14,8 +14,7 @@ export default function GameScreen({
                                        roomCode,
                                        altMode,
                                        onLeaveLobby,
-                                       onPlayAgain,
-                                       lobbyLeader
+                                       onPlayAgain
                                    }) {
 
     //Prompts
@@ -31,22 +30,24 @@ export default function GameScreen({
     const [playerAnswer, setPlayerAnswer] = useState("");
     const [answers, setAnswers] = useState([]);
     const [votedOut, setVotedOut] = useState(null);
-    const [imposter, setImposter] = useState("");
-    const [selectedPlayer, setSelectedPlayer] = useState("");
+    const [imposter, setImposter] = useState([]);
+    const [selectedPlayer, setSelectedPlayer] = useState([]);
     const [fakePlayer, setFakePlayer] = useState("");
+    const [lobbyLeader, setLobbyLeader] = useState(players.find(p => p.leader && p.playerId === playerId) !== undefined);
 
     //flags
     const [phase, setPhase] = useState("promptPick");
     const [playerAnswered, setPlayerAnswered] = useState(false);
     const [voted, setVoted] = useState(false);
     const [gameDone, setGameDone] = useState(false);
-    const [tie, setTie] = useState(false);
+    const [noImposters, setNoImposters] = useState(false);
     const [typingIsDone, setTypingIsDone] = useState(false);
     const [fakeOut, setFakeOut] = useState(false);
     const [badPrompt, setBadPrompt] = useState(false);
     const [badImpPrompt, setImpBadPrompt] = useState(false);
     const [badAnswer, setBadAnswer] = useState(false);
     const [keepScores, setKeepScores] = useState(false);
+    const [badVote, setBadVote] = useState(false);
 
     //counters
     const [finalVotes, setFinalVotes] = useState({});
@@ -72,25 +73,28 @@ export default function GameScreen({
     useEffect(() => {
         socket.on("updatePlayers", (players) => {
             setPlayers(players);
+            setLobbyLeader(players.find(p => p.leader && p.playerId === playerId) !== undefined)
         })
         socket.on("allPromptsReceived", ({ prompt }) => {
             setCurrentPrompt(prompt);
             setPhase("answer");
         });
         socket.on("revealAnswers", (answers, currentPrompt) => {
-            setVoteCounts(Object.fromEntries(answers.map(a => [a.playerId, 0])));
+            const initialCounts = Object.fromEntries(answers.map(a => [a.playerId, 0]));
+            initialCounts["0"] = 0;
+            setVoteCounts(initialCounts);
             setAnswers(answers);
             setCurrentPrompt(currentPrompt)
             setPhase("voting");
         });
         socket.on("revealData", ({votedOut, votes, prompts, imposter, players, fakeOut, fakePlayer}) => {
-            if(votedOut === null){
-                setTie(true);
+            if(votedOut.length === 1 && votedOut.includes("0")){
+                setNoImposters(true);
             }
             setVotedOut(votedOut);
             setFinalVotes(votes);
             setFinalPrompts(prompts);
-            setImposter(imposter);
+            setImposter(imposter || []);
             setPlayers(players);
             setFakeOut(fakeOut);
             setFakePlayer(fakePlayer);
@@ -108,9 +112,9 @@ export default function GameScreen({
             setPlayerAnswer("");
             setPromptSent(false);
             setVoted(false);
-            setSelectedPlayer("");
+            setSelectedPlayer([]);
             setVotedOut(null);
-            setTie(false);
+            setNoImposters(false);
             setTypingIsDone(false);
             setPhase("answer");
         });
@@ -129,9 +133,9 @@ export default function GameScreen({
             setPlayerAnswer("");
             setPromptSent(false);
             setVoted(false);
-            setSelectedPlayer("");
+            setSelectedPlayer([]);
             setVotedOut(null);
-            setTie(false);
+            setNoImposters(false);
             setTypingIsDone(false);
             setFakeOut(false);
             setGameDone(false);
@@ -154,14 +158,22 @@ export default function GameScreen({
     };
 
     const lockInVote = () => {
-        if (!selectedPlayer) return alert("Select a player to vote for!");
-        socket.emit("submitVote", {roomCode, playerId});
+        if (!selectedPlayer.length) {
+            setBadVote(true);
+            return;
+        }
+        socket.emit("submitVote", { roomCode, playerId });
         setVoted(true);
     };
 
-    const votePlayer = (e, selectedPlayer) => {
-        setSelectedPlayer(selectedPlayer);
-        socket.emit("votePlayer", {roomCode, playerId, votedPlayerId: selectedPlayer});
+    const votePlayer = (e, selection) => {
+        if (!selectedPlayer.includes(selection)) {
+            selectedPlayer.push(selection);
+            setBadVote(false);
+        } else {
+            selectedPlayer.splice(selectedPlayer.indexOf(selection), 1);
+        }
+        socket.emit("votePlayer", {roomCode, playerId, votedPlayerIds: selectedPlayer});
     };
 
     const sendStartNextRound = () => {
@@ -379,19 +391,18 @@ export default function GameScreen({
                             <br/>
                             <div><strong>The prompt was:</strong> {currentPrompt} </div>
                         </div>
-                        <ul>
-                            <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
+                            <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%", marginTop: 1 + "em"}}>
                             {answers.map((a) => (
                                 <Card
                                     sx={{ overflow: "visible" }}
                                     className="card-selectable"
-                                    style={{ backgroundColor: selectedPlayer === a.playerId ? "purple" : `rgba(120, 38, 153, 0.3)`}}
+                                    style={{ backgroundColor: selectedPlayer.includes(a.playerId) ? "purple" : `rgba(120, 38, 153, 0.3)`}}
                                     key={a.playerId}
                                     onClick={e => {
                                     if (!voted)
                                         votePlayer(e, a.playerId);
                                 }}>
-                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}} showZero={true}>
+                                    <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
                                         <CardContent>
                                             <Typography style={{ color: "white" }}>
                                                 {a.name}
@@ -404,57 +415,99 @@ export default function GameScreen({
                                 </Card>
                             ))}
                             </Grid>
-                        </ul>
-                        {!voted ? (
-                            <Button
-                                sx={{
-                                    marginTop: 1 + "em",
-                                    marginRight: "20%",
-                                    float: "right"
+                        <Stack direction="row" alignItems="center" justifyContent="center" sx={{marginTop: 1 + "em", paddingRight: "20%"}}>
+                            <Card
+                                style={{
+                                    backgroundColor: selectedPlayer.includes("0") ? "purple" : `rgba(120, 38, 153, 0.3)`,
+                                    cursor: "pointer",
+                                    overflow: "visible"
                                 }}
-                                disabled={!selectedPlayer}
-                                color="secondary"
-                                variant="outlined"
-                                onClick={lockInVote}
-                            >Lock in</Button>
+                                onClick={e => {
+                                    if (!voted)
+                                        votePlayer(e, "0");
+                                }}
+                            >
+                                <Badge badgeContent={voteCounts["0"]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
+                                    <CardContent>
+                                        <Typography sx={{ color: "white", textAlign: "center"}}>
+                                            {"No imposter this round!"}
+                                        </Typography>
+                                    </CardContent>
+                                </Badge>
+                            </Card>
+                        </Stack>
+                        {!voted ? (
+                            <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", paddingRight: "20%", float: "right", minWidth: "50%"}}>
+                                <Button
+                                    sx={{
+                                        float: "right"
+                                    }}
+                                    color={badVote ? "error" :"secondary"}
+                                    variant="outlined"
+                                    onClick={lockInVote}
+                                >Lock in</Button>
+                                {badVote ? (
+                                <span style={{color: "darkred", marginTop: 1 + "em"}}>Vote for something!</span>
+                                ) : null}
+                            </Stack>
                         ) : null}
                     </div>
                 ) : null}
                 {phase === "reveal" && (
                     <div>
                         <div>
-                            <strong>The <span style={{color: "red"}}>imposter</span> was: </strong>
-                            <TypingText typingDone={handleTypingDone} fakeOut={fakeOut} eraseText={fakeOut ? fakePlayer : players.find(p => p.playerId === imposter)?.name} finalText={players.find(p => p.playerId === imposter)?.name}/>
+                            {imposter.length === 0 ? (
+                                <strong>No imposters this round!</strong>
+                            ) : (
+                                <>
+                                    <strong>
+                                        The <span style={{color: "red"}}>imposter{imposter.length > 1 ? "s" : ""}</span> {imposter.length > 1 ? "were" : "was"}:{" "}
+                                    </strong>
+                                    {(() => {
+                                        const names = players.filter(p => imposter.includes(p.playerId)).map(p => p.name).join(", ");
+                                        return (
+                                            <TypingText
+                                                typingDone={handleTypingDone}
+                                                fakeOut={fakeOut}
+                                                eraseText={fakeOut ? fakePlayer : names}
+                                                finalText={names}
+                                            />
+                                        );
+                                    })()}
+                                </>
+                            )}
                         </div>
                         <br/>
                         <div><strong style={{color: "green"}}>Prompt:</strong> {finalPrompts.prompt}</div>
                         <br/>
-                        <div><strong><span style={{color: "red"}}>Imposter's</span> Prompt was:</strong> {finalPrompts.impPrompt}</div>
+                        <div><strong><span style={{color: "red"}}>Imposter{imposter.length !== 1 ? "s" : ""}</span> Prompt{imposter.length !== 1 ? "s" : ""}:</strong> {finalPrompts.impPrompt}</div>
                         <br/>
-                        {!tie ? (
+                        {!noImposters ? (
                             <React.Fragment>
                                 <div><strong>Majority of you voted for:</strong></div>
                                 <div style={{display: "flex", justifyContent: "center", flexDirection: "row", alignItems: "center", width: "100%"}}>
-                                    <Card
-                                        style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`}}
-                                        key={votedOut.playerId}
+                                    {votedOut.map((p) => (
+                                        <Card
+                                            style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`}}
+                                            key={p.playerId}
                                         >
-                                        <CardContent>
-                                            <Typography style={{ color: "white" }}>
-                                                {votedOut.name}
-                                                <br/>
-                                                <br/>
-                                                <span>Answered with: {votedOut.answer} </span>
-                                            </Typography>
-                                        </CardContent>
-                                    </Card>
+                                            <CardContent>
+                                                <Typography style={{ color: "white" }}>
+                                                    {p.name}
+                                                    <br/>
+                                                    <br/>
+                                                    <span>Answered with: {p.answer} </span>
+                                                </Typography>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
                                 </div>
-                                {typingIsDone && votedOut.playerId !== imposter ? (
+                                {typingIsDone && Array.isArray(votedOut) && votedOut.length > 0 && !votedOut.some(p => p && typeof p === "object" && imposter.includes(p.playerId)) ? (
                                     <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
                                 ): null}
                             </React.Fragment>
                         ) : (
-                            <div><strong>It's a tie!</strong></div>
+                            <div><strong>Most of you voted that there are no imposters this round!</strong></div>
                         )}
                         {gameDone ? (
                             <Button
