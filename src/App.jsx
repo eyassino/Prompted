@@ -292,7 +292,7 @@ export default function App() {
                                 color="secondary"
                                 onClick={readyUp}
                             >
-                                Ready Up
+                                {"Ready Up " + players.filter(p => p.ready).length + "/" + (players.length > 3 ? players.length : "3")}
                             </Button>
                             <Button
                                 variant="outlined"
