@@ -50,7 +50,6 @@ export default function GameScreen({
     const [badVote, setBadVote] = useState(false);
 
     //counters
-    const [finalVotes, setFinalVotes] = useState({});
     const [voteCounts, setVoteCounts] = useState({});
     const [playAgainCount, setPlayAgainCount] = useState(0);
 
@@ -87,12 +86,11 @@ export default function GameScreen({
             setCurrentPrompt(currentPrompt)
             setPhase("voting");
         });
-        socket.on("revealData", ({votedOut, votes, prompts, imposter, players, fakeOut, fakePlayer}) => {
+        socket.on("revealData", ({votedOut, prompts, imposter, players, fakeOut, fakePlayer}) => {
             if(votedOut.length === 1 && votedOut.includes("0")){
                 setNoImposters(true);
             }
             setVotedOut(votedOut);
-            setFinalVotes(votes);
             setFinalPrompts(prompts);
             setImposter(imposter || []);
             setPlayers(players);
@@ -145,7 +143,7 @@ export default function GameScreen({
             setImpPrompt("");
             setPhase("promptPick");
         });
-    }, []);
+    }, [playerId]);
 
     const submitAnswer = () => {
         if(!playerAnswer || playerAnswer.length > 115) {
@@ -242,7 +240,12 @@ export default function GameScreen({
             <div className="main-body">
                 <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
                     {players.map((p) => (
-                        <Card sx={{ overflow: "visible" }} style={{ backgroundColor: p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }} key={p.playerId}>
+                        <Card
+                            sx={{ overflow: "visible" }}
+                            style={{ backgroundColor: p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`, margin: 1 + `em` }}
+                            key={p.playerId}
+                            className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                        >
                             <Badge badgeContent={p.score} color="secondary" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} showZero={true}>
                                 <CardContent>
                                     <Typography style={{ color: p.leader ? "black" : "white" }}>
