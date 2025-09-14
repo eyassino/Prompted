@@ -8,4 +8,4 @@ Each player submits a prompt, and at round start a random prompt will be picked,
 
 Players must figure out which player got the imposter prompt.
 
-Score distribution is +1 if the player is correct that it is the imposter, imposter gets +1 for each player that did not guess them correctly
+There can be rounds where there are a random amount of imposters or none at all, so watch out!
