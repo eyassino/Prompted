@@ -41,8 +41,8 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
         <div className="chat">
             <div className="innerChat">
                 {chatMessages.map((msg) => (
-                    <div key={msg.id} style={{ marginBottom: "4px" }}>
-                        <strong>{msg.name}: </strong>
+                    <div key={msg.id} style={{ marginBottom: "4px", wordWrap: "break-word", overflowWrap: "anywhere", whiteSpace: "pre-wrap" }}>
+                        <strong><u>{msg.name}</u>: </strong>
                         <span>{msg.message}</span>
                     </div>
                 ))}
