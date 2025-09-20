@@ -347,7 +347,7 @@ export default function App() {
                                 </Tooltip>
                             </div>
                         </FormGroup>
-                        <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
+                        <Grid container spacing={1} className="center-container">
                             {players.map((p) => (
                                 <Card key={p.playerId}
                                       className={`player-card ${p.ready ? 'ready-glow' : ''}`}

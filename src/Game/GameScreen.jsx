@@ -389,13 +389,13 @@ export default function GameScreen({
                     )
                 ): null}
                 {phase === "voting" ? (
-                    <div>
-                        <div style={{textAlign: "center", marginRight: "20%"}}>
+                    <div className="center-container">
+                        <div>
                             <div>{voted ? "Voted! Waiting for everyone to finish voting..." : "Discuss! who do you think the imposter is?"}</div>
                             <br/>
                             <div><strong>The prompt was:</strong> {currentPrompt} </div>
                         </div>
-                            <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%", marginTop: 1 + "em"}}>
+                            <Box container sx={{marginTop: 1 + "em", border: "2px dashed purple", maxHeight: "50vh", overflow: "auto"}}>
                             {answers.map((a) => (
                                 <Card
                                     sx={{ overflow: "visible" }}
@@ -418,8 +418,8 @@ export default function GameScreen({
                                     </Badge>
                                 </Card>
                             ))}
-                            </Grid>
-                        <Stack direction="row" alignItems="center" justifyContent="center" sx={{marginTop: 1 + "em", paddingRight: "20%"}}>
+                            </Box>
+                        <Stack direction="row" alignItems="center" justifyContent="center" sx={{marginTop: 1 + "em"}}>
                             <Card
                                 style={{
                                     backgroundColor: selectedPlayer.includes("0") ? "purple" : `rgba(120, 38, 153, 0.3)`,
@@ -441,10 +441,10 @@ export default function GameScreen({
                             </Card>
                         </Stack>
                         {!voted ? (
-                            <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", paddingRight: "20%", float: "right", minWidth: "50%"}}>
+                            <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", minWidth: "50%"}}>
                                 <Button
                                     sx={{
-                                        float: "right"
+                                        marginLeft: "auto"
                                     }}
                                     color={badVote ? "error" :"secondary"}
                                     variant="outlined"
@@ -458,7 +458,7 @@ export default function GameScreen({
                     </div>
                 ) : null}
                 {phase === "reveal" && (
-                    <div style={{display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center", width: "60%", textWrap: "wrap"}}>
+                    <div className="center-container">
                         <Box component="section" sx={{
                             padding:  2,
                             border: "2px dashed purple",
@@ -516,7 +516,35 @@ export default function GameScreen({
                                 ): null}
                             </React.Fragment>
                         ) : (
+                            <>
                             <div><strong>Most of you voted that there are no imposters this round!</strong></div>
+                                {typingIsDone && imposter.length > 0 ? (
+                                    <React.Fragment>
+                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
+                                    <br/>
+                                    <span>But, sadly, that is wrong. Imposter{imposter.length !== 1 ? "s" : ""} answered with:</span></div>
+                                    <Box sx={{overflow: "auto", maxHeight: "30vh", marginTop: 1 + "em", minWidth: "100", border: "2px dashed purple", padding: "2px", marginBottom: 1 + "em"}}>
+                                {finalPrompts.answers.filter(p => imposter.includes(p.playerId)).map((p) => (
+                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
+                                        <Card
+                                            style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`, display: "inline-block"}}
+                                            key={p.playerId}
+                                        >
+                                            <CardContent>
+                                                <Typography style={{ color: "white" }}>
+                                                    {p.name}
+                                                    <br/>
+                                                    <br/>
+                                                    <span>Answered with: {p.answer} </span>
+                                                </Typography>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                ))}
+                                </Box>
+                                </React.Fragment>
+                                ) : null}
+                            </>
                         )}
                         {gameDone ? (
                             <Button
