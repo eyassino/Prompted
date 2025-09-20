@@ -32,8 +32,10 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
 
     // Send new message
     const sendMessage = () => {
-        if (!newMessage.trim()) return;
-        socket.emit("sendMessage", { roomCode, playerId, message: newMessage });
+        if (!newMessage.replace(/\s+/g, ' ').trim() || newMessage.length > 250) {
+            return;
+        }
+        socket.emit("sendMessage", { roomCode, playerId, message: newMessage.replace(/\s+/g, ' ').trim() });
         setNewMessage("");
     };
 
@@ -70,6 +72,7 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
                     label="Message"
                     color="secondary"
                     variant="outlined"
+                    slotProps={{ htmlInput: { maxLength: 250 } }}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
                             sendMessage();
