@@ -66,18 +66,27 @@ export default function App() {
     });
 
     const createRoom = () => {
-        if (!name || name.length > 15) return setBadName(true); else {setBadName(false);}
-        socket.emit("createRoom", name, playerId, (code) => {
+        if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") return setBadName(true); else {setBadName(false);}
+        socket.emit("createRoom", name.replace(/\s+/g, ' ').trim(), playerId, (code) => {
             setRoomCode(code);
             setInRoom(true);
         });
     };
 
     const joinRoom = () => {
-        if (!roomCode || roomCode.length > 4) return setBadCode(true); else {setBadCode(false);}
+        if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") {
+            setBadName(true);
+            return;
+        }
+        if (!roomCode || (roomCode.length > 4)) {
+            setBadCode(true);
+            return;
+        }
+        setBadName(false);
+        setBadCode(false);
         socket.emit(
             "joinRoom",
-            { roomCode, playerName: name, playerId },
+            { roomCode, playerName: name.replace(/\s+/g, ' ').trim(), playerId },
             (res) => {
                 if (res.success) {
                     setInRoom(true);
@@ -217,7 +226,12 @@ export default function App() {
                                 value={name}
                                 required
                                 slotProps={{ htmlInput: { maxLength: 15 } }}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    if (badName) {
+                                        setBadName(false);
+                                    }
+                                }}
                             />
                             <Button
                                 variant="outlined"
@@ -249,7 +263,12 @@ export default function App() {
                                 helperText={badCode ? "Enter a valid room code" : ""}
                                 value={roomCode}
                                 slotProps={{ htmlInput: { maxLength: 4 } }}
-                                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                                onChange={(e) => {
+                                    setRoomCode(e.target.value.toUpperCase());
+                                    if (badCode) {
+                                        setBadCode(false);
+                                    }
+                                }}
                             />
                             <Button
                                 sx={{
