@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { socket } from "../socket";
 import {Button} from "@mui/material";
 import TextField from "@mui/material/TextField";
+import useSound from 'use-sound'
+import msgSound from "../assets/chatMsg.mp3";
 
 export default function Chat({ roomCode, playerId, initialChat = [] }) {
     const [chatMessages, setChatMessages] = useState(initialChat);
     const [newMessage, setNewMessage] = useState("");
     const chatEndRef = useRef(null);
+    const [playMsgSound] = useSound(msgSound, { volume: 0.2 });
 
     // Set chat messages if there is chat history
     useEffect(() => {
@@ -16,14 +19,14 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
     // Listen for messages
     useEffect(() => {
         socket.on("newMessage", (message) => {
-            console.log(message);
             setChatMessages((prev) => [...prev, message]);
+            playMsgSound();
         });
 
         return () => {
             socket.off("newMessage");
         };
-    }, []);
+    }, [playMsgSound]);
 
     // Auto-scroll to bottom when messages update
     useEffect(() => {
@@ -32,8 +35,10 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
 
     // Send new message
     const sendMessage = () => {
-        if (!newMessage.trim()) return;
-        socket.emit("sendMessage", { roomCode, playerId, message: newMessage });
+        if (!newMessage.replace(/\s+/g, ' ').trim() || newMessage.length > 250) {
+            return;
+        }
+        socket.emit("sendMessage", { roomCode, playerId, message: newMessage.replace(/\s+/g, ' ').trim() });
         setNewMessage("");
     };
 
@@ -70,6 +75,7 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
                     label="Message"
                     color="secondary"
                     variant="outlined"
+                    slotProps={{ htmlInput: { maxLength: 250 } }}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
                             sendMessage();

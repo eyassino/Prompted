@@ -154,7 +154,6 @@ button:focus-visible {
     margin: 1em;
     cursor: pointer;
     transition: transform 0.2s ease-in-out;
-    min-width: 50%;
 }
 
 @keyframes twitch {
@@ -207,4 +206,13 @@ button:focus-visible {
                 0 0 12px rgba(120, 38, 153, 0.3),
                 0 0 20px rgba(209, 44, 205, 0.25);
     }
+}
+
+.center-container {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    width: 60%;
+    text-wrap: wrap;
 }

@@ -4,9 +4,15 @@ import {Button, Grid, Stack} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
 import {Card, CardContent, Typography, Badge, FormControlLabel, Switch} from "@mui/material";
-import TypingText from "../assets/typing.jsx";
+import TypingText from "../Helper/typing.jsx";
 import { useInView } from "react-intersection-observer";
 import { BarChart } from '@mui/x-charts/BarChart';
+import Box from "@mui/material/Box";
+import { createImposterGameHandlers } from "../socketEvents/imposterGameEvents.jsx";
+import useSound from 'use-sound'
+import readySound from "../assets/ready.mp3";
+import joinSound from "../assets/join.mp3";
+import dcSound from "../assets/dc.mp3";
 
 export default function GameScreen({
                                        playerId,
@@ -53,6 +59,11 @@ export default function GameScreen({
     const [voteCounts, setVoteCounts] = useState({});
     const [playAgainCount, setPlayAgainCount] = useState(0);
 
+    //sounds
+    const [playReadySound] = useSound(readySound, { volume: 0.3 });
+    const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
+    const [playDCSound] = useSound(dcSound, { volume: 0.3 });
+
 
     const sendPrompt = () => {
         if(!prompt || prompt.length > 115) {
@@ -70,80 +81,46 @@ export default function GameScreen({
     };
 
     useEffect(() => {
-        socket.on("updatePlayers", (players) => {
-            setPlayers(players);
-            setLobbyLeader(players.find(p => p.leader && p.playerId === playerId) !== undefined)
+        const eventHandlers = createImposterGameHandlers ({
+            setPlayers,
+            setLobbyLeader,
+            playerId,
+            setPrompt,
+            setImpPrompt,
+            setPromptSent,
+            setCurrentPrompt,
+            setFinalPrompts,
+            setAnswers,
+            setVotedOut,
+            setImposter,
+            setSelectedPlayer,
+            setFakePlayer,
+            setPhase,
+            setPlayerAnswered,
+            setVoted,
+            setGameDone,
+            setKeepScores,
+            setPlayAgainCount,
+            setVoteCounts,
+            setNoImposters,
+            setTypingIsDone,
+            setFakeOut,
+            setPlayerAnswer,
+            playReadySound,
+            playJoinSound,
+            playDCSound
         })
-        socket.on("allPromptsReceived", ({ prompt }) => {
-            setCurrentPrompt(prompt);
-            setPhase("answer");
-        });
-        socket.on("revealAnswers", (answers, currentPrompt) => {
-            const initialCounts = Object.fromEntries(answers.map(a => [a.playerId, 0]));
-            initialCounts["0"] = 0;
-            setVoteCounts(initialCounts);
-            setAnswers(answers);
-            setCurrentPrompt(currentPrompt)
-            setPhase("voting");
-        });
-        socket.on("revealData", ({votedOut, prompts, imposter, players, fakeOut, fakePlayer}) => {
-            if(votedOut.length === 1 && votedOut.includes("0")){
-                setNoImposters(true);
+
+        for (const [event, handler] of Object.entries(eventHandlers)) {
+            socket.on(event, handler);
+        }
+
+        return () => {
+            for (const [event, handler] of Object.entries(eventHandlers)) {
+                socket.off(event, handler);
             }
-            setVotedOut(votedOut);
-            setFinalPrompts(prompts);
-            setImposter(imposter || []);
-            setPlayers(players);
-            setFakeOut(fakeOut);
-            setFakePlayer(fakePlayer);
-            setPhase("reveal");
-        });
-        socket.on("voteUpdate", (voteCount) => {
-            setVoteCounts(voteCount);
-        });
-        socket.on("noPromptsLeft", () => {
-            setGameDone(true);
-        });
-        socket.on("startNextRound", ({ prompt }) => {
-            setCurrentPrompt(prompt);
-            setPlayerAnswered(false);
-            setPlayerAnswer("");
-            setPromptSent(false);
-            setVoted(false);
-            setSelectedPlayer([]);
-            setVotedOut(null);
-            setNoImposters(false);
-            setTypingIsDone(false);
-            setPhase("answer");
-        });
-        socket.on("finishGame", (players) => {
-            setPlayers(players);
-            setPhase("done");
-        });
-        socket.on("updateKeepScore", (keepScores) => {
-            setKeepScores(keepScores);
-        })
-        socket.on("updatePlayAgainCount", (voteCount) => {
-            setPlayAgainCount(voteCount);
-        })
-        socket.on("lobbyReset", () => {
-            setPlayerAnswered(false);
-            setPlayerAnswer("");
-            setPromptSent(false);
-            setVoted(false);
-            setSelectedPlayer([]);
-            setVotedOut(null);
-            setNoImposters(false);
-            setTypingIsDone(false);
-            setFakeOut(false);
-            setGameDone(false);
-            setKeepScores(false);
-            setPlayAgainCount(0);
-            setPrompt("");
-            setImpPrompt("");
-            setPhase("promptPick");
-        });
-    }, [playerId]);
+        };
+    }, [playDCSound, playJoinSound, playReadySound, playerId]);
 
     const submitAnswer = () => {
         if(!playerAnswer || playerAnswer.length > 115) {
@@ -238,7 +215,7 @@ export default function GameScreen({
     return (
         <React.Fragment>
             <div className="main-body">
-                <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
+                <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", maxWidth: "60%"}}>
                     {players.map((p) => (
                         <Card
                             sx={{ overflow: "visible" }}
@@ -388,13 +365,13 @@ export default function GameScreen({
                     )
                 ): null}
                 {phase === "voting" ? (
-                    <div>
-                        <div style={{textAlign: "center", marginRight: "20%"}}>
+                    <div className="center-container">
+                        <div>
                             <div>{voted ? "Voted! Waiting for everyone to finish voting..." : "Discuss! who do you think the imposter is?"}</div>
                             <br/>
                             <div><strong>The prompt was:</strong> {currentPrompt} </div>
                         </div>
-                            <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%", marginTop: 1 + "em"}}>
+                            <Box container sx={{marginTop: 1 + "em", border: "2px dashed purple", maxHeight: "50vh", overflow: "auto"}}>
                             {answers.map((a) => (
                                 <Card
                                     sx={{ overflow: "visible" }}
@@ -417,8 +394,8 @@ export default function GameScreen({
                                     </Badge>
                                 </Card>
                             ))}
-                            </Grid>
-                        <Stack direction="row" alignItems="center" justifyContent="center" sx={{marginTop: 1 + "em", paddingRight: "20%"}}>
+                            </Box>
+                        <Stack direction="row" alignItems="center" justifyContent="center" sx={{marginTop: 1 + "em"}}>
                             <Card
                                 style={{
                                     backgroundColor: selectedPlayer.includes("0") ? "purple" : `rgba(120, 38, 153, 0.3)`,
@@ -440,10 +417,10 @@ export default function GameScreen({
                             </Card>
                         </Stack>
                         {!voted ? (
-                            <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", paddingRight: "20%", float: "right", minWidth: "50%"}}>
+                            <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", minWidth: "50%"}}>
                                 <Button
                                     sx={{
-                                        float: "right"
+                                        marginLeft: "auto"
                                     }}
                                     color={badVote ? "error" :"secondary"}
                                     variant="outlined"
@@ -457,37 +434,42 @@ export default function GameScreen({
                     </div>
                 ) : null}
                 {phase === "reveal" && (
-                    <div>
-                        <div>
-                            {imposter.length === 0 ? (
-                                <strong>No imposters this round!</strong>
-                            ) : (
-                                <>
-                                    <strong>
-                                        The <span style={{color: "red"}}>imposter{imposter.length > 1 ? "s" : ""}</span> {imposter.length > 1 ? "were" : "was"}:{" "}
-                                    </strong>
-                                    {(() => {
-                                        const names = players.filter(p => imposter.includes(p.playerId)).map(p => p.name).join(", ");
-                                        return (
-                                            <TypingText
-                                                typingDone={handleTypingDone}
-                                                fakeOut={fakeOut}
-                                                eraseText={fakeOut ? fakePlayer : names}
-                                                finalText={names}
-                                            />
-                                        );
-                                    })()}
-                                </>
-                            )}
-                        </div>
-                        <br/>
-                        <div><strong style={{color: "green"}}>Prompt:</strong> {finalPrompts.prompt}</div>
-                        <br/>
-                        <div><strong><span style={{color: "red"}}>Imposter{imposter.length !== 1 ? "s" : ""}</span> Prompt{imposter.length !== 1 ? "s" : ""}:</strong> {finalPrompts.impPrompt}</div>
-                        <br/>
+                    <div className="center-container">
+                        <Box component="section" sx={{
+                            padding:  2,
+                            border: "2px dashed purple",
+                            marginBottom: 1 + "em"
+                        }}>
+                            <div>
+                                {imposter.length === 0 ? (
+                                    <strong>No imposters this round!</strong>
+                                ) : (
+                                    <React.Fragment>
+                                        <strong>
+                                            The <span style={{color: "red"}}>imposter{imposter.length > 1 ? "s" : ""}</span> {imposter.length > 1 ? "were" : "was"}:{" "}
+                                        </strong>
+                                        {(() => {
+                                            const names = players.filter(p => imposter.includes(p.playerId)).map(p => p.name).join(", ");
+                                            return (
+                                                <TypingText
+                                                    typingDone={handleTypingDone}
+                                                    fakeOut={fakeOut}
+                                                    eraseText={fakeOut ? fakePlayer : names}
+                                                    finalText={names}
+                                                />
+                                            );
+                                        })()}
+                                    </React.Fragment>
+                                )}
+                            </div>
+                            <br/>
+                            <div><strong style={{color: "green"}}>Prompt:</strong> {finalPrompts.prompt}</div>
+                            <br/>
+                            <div><strong><span style={{color: "red"}}>Imposter{imposter.length !== 1 ? "s" : ""}</span> Prompt{imposter.length !== 1 ? "s" : ""}:</strong> {finalPrompts.impPrompt}</div>
+                        </Box>
                         {!noImposters ? (
                             <React.Fragment>
-                                <div><strong>Majority of you voted for:</strong></div>
+                                <div style={{marginRight: "auto"}}><strong>Majority of you voted for:</strong></div>
                                 <div style={{display: "flex", justifyContent: "center", flexDirection: "row", alignItems: "center", width: "100%"}}>
                                     {votedOut.map((p) => (
                                         <Card
@@ -510,12 +492,40 @@ export default function GameScreen({
                                 ): null}
                             </React.Fragment>
                         ) : (
+                            <>
                             <div><strong>Most of you voted that there are no imposters this round!</strong></div>
+                                {typingIsDone && imposter.length > 0 ? (
+                                    <React.Fragment>
+                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
+                                    <br/>
+                                    <span>But, sadly, that is wrong. Imposter{imposter.length !== 1 ? "s" : ""} answered with:</span></div>
+                                    <Box sx={{overflow: "auto", maxHeight: "30vh", marginTop: 1 + "em", minWidth: "100", border: "2px dashed purple", padding: "2px", marginBottom: 1 + "em"}}>
+                                {finalPrompts.answers.filter(p => imposter.includes(p.playerId)).map((p) => (
+                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
+                                        <Card
+                                            style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`, display: "inline-block"}}
+                                            key={p.playerId}
+                                        >
+                                            <CardContent>
+                                                <Typography style={{ color: "white" }}>
+                                                    {p.name}
+                                                    <br/>
+                                                    <br/>
+                                                    <span>Answered with: {p.answer} </span>
+                                                </Typography>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                ))}
+                                </Box>
+                                </React.Fragment>
+                                ) : null}
+                            </>
                         )}
                         {gameDone ? (
                             <Button
                                 sx={{
-                                    float: "right"
+                                    marginLeft: "auto"
                                 }}
                                 color="secondary"
                                 variant="outlined"
@@ -524,7 +534,7 @@ export default function GameScreen({
                         ) : (
                             <Button
                                 sx={{
-                                    float: "right"
+                                    marginLeft: "auto"
                                 }}
                                 color="secondary"
                                 variant="outlined"
@@ -534,7 +544,7 @@ export default function GameScreen({
                     </div>
                 )}
                 {phase === "done" && (
-                    <>
+                    <React.Fragment>
                         {(() => {
                             const names = players.map(p => p.name);
                             const scores = players.map(p => p.score);
@@ -626,7 +636,7 @@ export default function GameScreen({
                                 }}
                             />
                         </div>
-                    </>
+                    </React.Fragment>
                 )}
             </div>
         </React.Fragment>

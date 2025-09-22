@@ -15,8 +15,13 @@ import {
     Switch,
     ThemeProvider, Tooltip, Typography
 } from "@mui/material";
+import { createLobbyHandlers } from "./socketEvents/lobbyEvents.jsx"
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {Instructions} from "./Helper/Instructions.jsx";
+import useSound from 'use-sound'
+import readySound from "./assets/ready.mp3";
+import joinSound from "./assets/join.mp3";
+import dcSound from "./assets/dc.mp3";
 
 export default function App() {
     const [name, setName] = useState("");
@@ -31,6 +36,9 @@ export default function App() {
     const [altMode, setAltMode] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [lobbyLeader, setLobbyLeader] = useState(false);
+    const [playReadySound] = useSound(readySound, { volume: 0.3 });
+    const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
+    const [playDCSound] = useSound(dcSound, { volume: 0.3 });
 
     // On first load: get or create a persistent playerId
     useEffect(() => {
@@ -43,41 +51,49 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        socket.on("updatePlayers", (updatedPlayers) => {
-            setPlayers(updatedPlayers);
-            setLobbyLeader(updatedPlayers.find(p => p.leader && p.playerId === playerId) !== undefined);
-        });
-    }, [playerId]);
+        const handlers = createLobbyHandlers({
+            setPlayers,
+            setLobbyLeader,
+            setGameStarted,
+            setAltMode,
+            playReadySound,
+            playJoinSound,
+            playDCSound,
+            playerId
+        })
+        for (const [event, handler] of Object.entries(handlers)) {
+            socket.on(event, handler);
+        }
 
-    useEffect(() => {
-        const handleStartGame = (serverPlayers) => {
-            setGameStarted(true);
-            socket.emit("gameMode", {roomCode, altMode});
-            setPlayers(serverPlayers);
+        return () => {
+            for (const [event, handler] of Object.entries(handlers)) {
+                socket.off(event, handler);
+            }
         };
-        socket.on("startGame", handleStartGame);
-        return () => socket.off("startGame", handleStartGame);
-    }, [altMode, roomCode]);
-
-    useEffect(() => {
-       socket.on("updateGameMode", (altMode) => {
-           setAltMode(altMode);
-       });
-    });
+    }, [altMode, playDCSound, playJoinSound, playReadySound, playerId, roomCode]);
 
     const createRoom = () => {
-        if (!name || name.length > 15) return setBadName(true); else {setBadName(false);}
-        socket.emit("createRoom", name, playerId, (code) => {
+        if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") return setBadName(true); else {setBadName(false);}
+        socket.emit("createRoom", name.replace(/\s+/g, ' ').trim(), playerId, (code) => {
             setRoomCode(code);
             setInRoom(true);
         });
     };
 
     const joinRoom = () => {
-        if (!roomCode || roomCode.length > 4) return setBadCode(true); else {setBadCode(false);}
+        if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") {
+            setBadName(true);
+            return;
+        }
+        if (!roomCode || (roomCode.length > 4)) {
+            setBadCode(true);
+            return;
+        }
+        setBadName(false);
+        setBadCode(false);
         socket.emit(
             "joinRoom",
-            { roomCode, playerName: name, playerId },
+            { roomCode, playerName: name.replace(/\s+/g, ' ').trim(), playerId },
             (res) => {
                 if (res.success) {
                     setInRoom(true);
@@ -217,7 +233,12 @@ export default function App() {
                                 value={name}
                                 required
                                 slotProps={{ htmlInput: { maxLength: 15 } }}
-                                onChange={(e) => setName(e.target.value)}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    if (badName) {
+                                        setBadName(false);
+                                    }
+                                }}
                             />
                             <Button
                                 variant="outlined"
@@ -249,7 +270,12 @@ export default function App() {
                                 helperText={badCode ? "Enter a valid room code" : ""}
                                 value={roomCode}
                                 slotProps={{ htmlInput: { maxLength: 4 } }}
-                                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                                onChange={(e) => {
+                                    setRoomCode(e.target.value.toUpperCase());
+                                    if (badCode) {
+                                        setBadCode(false);
+                                    }
+                                }}
                             />
                             <Button
                                 sx={{
@@ -328,7 +354,7 @@ export default function App() {
                                 </Tooltip>
                             </div>
                         </FormGroup>
-                        <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", paddingRight: "20%"}}>
+                        <Grid container spacing={1} className="center-container">
                             {players.map((p) => (
                                 <Card key={p.playerId}
                                       className={`player-card ${p.ready ? 'ready-glow' : ''}`}
