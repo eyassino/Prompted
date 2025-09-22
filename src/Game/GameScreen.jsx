@@ -4,10 +4,15 @@ import {Button, Grid, Stack} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
 import {Card, CardContent, Typography, Badge, FormControlLabel, Switch} from "@mui/material";
-import TypingText from "../assets/typing.jsx";
+import TypingText from "../Helper/typing.jsx";
 import { useInView } from "react-intersection-observer";
 import { BarChart } from '@mui/x-charts/BarChart';
 import Box from "@mui/material/Box";
+import { createImposterGameHandlers } from "../socketEvents/imposterGameEvents.jsx";
+import useSound from 'use-sound'
+import readySound from "../assets/ready.mp3";
+import joinSound from "../assets/join.mp3";
+import dcSound from "../assets/dc.mp3";
 
 export default function GameScreen({
                                        playerId,
@@ -54,6 +59,11 @@ export default function GameScreen({
     const [voteCounts, setVoteCounts] = useState({});
     const [playAgainCount, setPlayAgainCount] = useState(0);
 
+    //sounds
+    const [playReadySound] = useSound(readySound, { volume: 0.3 });
+    const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
+    const [playDCSound] = useSound(dcSound, { volume: 0.3 });
+
 
     const sendPrompt = () => {
         if(!prompt || prompt.length > 115) {
@@ -71,80 +81,46 @@ export default function GameScreen({
     };
 
     useEffect(() => {
-        socket.on("updatePlayers", (players) => {
-            setPlayers(players);
-            setLobbyLeader(players.find(p => p.leader && p.playerId === playerId) !== undefined)
+        const eventHandlers = createImposterGameHandlers ({
+            setPlayers,
+            setLobbyLeader,
+            playerId,
+            setPrompt,
+            setImpPrompt,
+            setPromptSent,
+            setCurrentPrompt,
+            setFinalPrompts,
+            setAnswers,
+            setVotedOut,
+            setImposter,
+            setSelectedPlayer,
+            setFakePlayer,
+            setPhase,
+            setPlayerAnswered,
+            setVoted,
+            setGameDone,
+            setKeepScores,
+            setPlayAgainCount,
+            setVoteCounts,
+            setNoImposters,
+            setTypingIsDone,
+            setFakeOut,
+            setPlayerAnswer,
+            playReadySound,
+            playJoinSound,
+            playDCSound
         })
-        socket.on("allPromptsReceived", ({ prompt }) => {
-            setCurrentPrompt(prompt);
-            setPhase("answer");
-        });
-        socket.on("revealAnswers", (answers, currentPrompt) => {
-            const initialCounts = Object.fromEntries(answers.map(a => [a.playerId, 0]));
-            initialCounts["0"] = 0;
-            setVoteCounts(initialCounts);
-            setAnswers(answers);
-            setCurrentPrompt(currentPrompt)
-            setPhase("voting");
-        });
-        socket.on("revealData", ({votedOut, prompts, imposter, players, fakeOut, fakePlayer}) => {
-            if(votedOut.length === 1 && votedOut.includes("0")){
-                setNoImposters(true);
+
+        for (const [event, handler] of Object.entries(eventHandlers)) {
+            socket.on(event, handler);
+        }
+
+        return () => {
+            for (const [event, handler] of Object.entries(eventHandlers)) {
+                socket.off(event, handler);
             }
-            setVotedOut(votedOut);
-            setFinalPrompts(prompts);
-            setImposter(imposter || []);
-            setPlayers(players);
-            setFakeOut(fakeOut);
-            setFakePlayer(fakePlayer);
-            setPhase("reveal");
-        });
-        socket.on("voteUpdate", (voteCount) => {
-            setVoteCounts(voteCount);
-        });
-        socket.on("noPromptsLeft", () => {
-            setGameDone(true);
-        });
-        socket.on("startNextRound", ({ prompt }) => {
-            setCurrentPrompt(prompt);
-            setPlayerAnswered(false);
-            setPlayerAnswer("");
-            setPromptSent(false);
-            setVoted(false);
-            setSelectedPlayer([]);
-            setVotedOut(null);
-            setNoImposters(false);
-            setTypingIsDone(false);
-            setPhase("answer");
-        });
-        socket.on("finishGame", (players) => {
-            setPlayers(players);
-            setPhase("done");
-        });
-        socket.on("updateKeepScore", (keepScores) => {
-            setKeepScores(keepScores);
-        })
-        socket.on("updatePlayAgainCount", (voteCount) => {
-            setPlayAgainCount(voteCount);
-        })
-        socket.on("lobbyReset", () => {
-            setPlayerAnswered(false);
-            setPlayerAnswer("");
-            setPromptSent(false);
-            setVoted(false);
-            setSelectedPlayer([]);
-            setVotedOut(null);
-            setNoImposters(false);
-            setTypingIsDone(false);
-            setFakeOut(false);
-            setGameDone(false);
-            setKeepScores(false);
-            setPlayAgainCount(0);
-            setPrompt("");
-            setImpPrompt("");
-            setPhase("promptPick");
-        });
-    }, [playerId]);
+        };
+    }, [playDCSound, playJoinSound, playReadySound, playerId]);
 
     const submitAnswer = () => {
         if(!playerAnswer || playerAnswer.length > 115) {

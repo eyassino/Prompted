@@ -15,8 +15,13 @@ import {
     Switch,
     ThemeProvider, Tooltip, Typography
 } from "@mui/material";
+import { createLobbyHandlers } from "./socketEvents/lobbyEvents.jsx"
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {Instructions} from "./Helper/Instructions.jsx";
+import useSound from 'use-sound'
+import readySound from "./assets/ready.mp3";
+import joinSound from "./assets/join.mp3";
+import dcSound from "./assets/dc.mp3";
 
 export default function App() {
     const [name, setName] = useState("");
@@ -31,6 +36,9 @@ export default function App() {
     const [altMode, setAltMode] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [lobbyLeader, setLobbyLeader] = useState(false);
+    const [playReadySound] = useSound(readySound, { volume: 0.3 });
+    const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
+    const [playDCSound] = useSound(dcSound, { volume: 0.3 });
 
     // On first load: get or create a persistent playerId
     useEffect(() => {
@@ -43,27 +51,26 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        socket.on("updatePlayers", (updatedPlayers) => {
-            setPlayers(updatedPlayers);
-            setLobbyLeader(updatedPlayers.find(p => p.leader && p.playerId === playerId) !== undefined);
-        });
-    }, [playerId]);
+        const handlers = createLobbyHandlers({
+            setPlayers,
+            setLobbyLeader,
+            setGameStarted,
+            setAltMode,
+            playReadySound,
+            playJoinSound,
+            playDCSound,
+            playerId
+        })
+        for (const [event, handler] of Object.entries(handlers)) {
+            socket.on(event, handler);
+        }
 
-    useEffect(() => {
-        const handleStartGame = (serverPlayers) => {
-            setGameStarted(true);
-            socket.emit("gameMode", {roomCode, altMode});
-            setPlayers(serverPlayers);
+        return () => {
+            for (const [event, handler] of Object.entries(handlers)) {
+                socket.off(event, handler);
+            }
         };
-        socket.on("startGame", handleStartGame);
-        return () => socket.off("startGame", handleStartGame);
-    }, [altMode, roomCode]);
-
-    useEffect(() => {
-       socket.on("updateGameMode", (altMode) => {
-           setAltMode(altMode);
-       });
-    });
+    }, [altMode, playDCSound, playJoinSound, playReadySound, playerId, roomCode]);
 
     const createRoom = () => {
         if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") return setBadName(true); else {setBadName(false);}
