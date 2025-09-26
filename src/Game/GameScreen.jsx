@@ -27,7 +27,6 @@ export default function GameScreen({
     //Prompts
     const [prompt, setPrompt] = useState("");
     const [impPrompt, setImpPrompt] = useState("");
-    const [promptSent, setPromptSent] = useState(false);
     const [currentPrompt, setCurrentPrompt] = useState("");
     const [finalPrompts, setFinalPrompts] = useState({});
     const [players, setPlayers] = useState(initialPlayers);
@@ -87,7 +86,6 @@ export default function GameScreen({
             playerId,
             setPrompt,
             setImpPrompt,
-            setPromptSent,
             setCurrentPrompt,
             setFinalPrompts,
             setAnswers,
@@ -470,7 +468,7 @@ export default function GameScreen({
                             <React.Fragment>
                                 <div><strong>Majority of you voted for:</strong></div>
                                 <div style={{display: "flex", justifyContent: "center", flexDirection: "row", alignItems: "center", border: "2px dashed purple", marginTop: 1 + "em"}}>
-                                    {votedOut.map((p) => (
+                                    {Array.isArray(votedOut) ? votedOut.map((p) => (
                                         <Card
                                             style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`}}
                                             key={p.playerId}
@@ -484,7 +482,7 @@ export default function GameScreen({
                                                 </Typography>
                                             </CardContent>
                                         </Card>
-                                    ))}
+                                    )) : null}
                                 </div>
                                 {typingIsDone && Array.isArray(votedOut) && votedOut.length > 0 && !votedOut.some(p => p && typeof p === "object" && imposter.includes(p.playerId)) ? (
                                     <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>

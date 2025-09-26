@@ -4,7 +4,6 @@ export function createImposterGameHandlers({
                                                playerId,
                                                setPrompt,
                                                setImpPrompt,
-                                               setPromptSent,
                                                setCurrentPrompt,
                                                setFinalPrompts,
                                                setAnswers,
@@ -75,7 +74,6 @@ export function createImposterGameHandlers({
         startNextRound: ({ prompt }) => {
             setCurrentPrompt(prompt);
             setPlayerAnswer("");
-            setPromptSent(false);
             setWaiting(false);
             setSelectedPlayer([]);
             setVotedOut(null);
@@ -92,7 +90,6 @@ export function createImposterGameHandlers({
         lobbyReset: () => {
             setWaiting(false);
             setPlayerAnswer("");
-            setPromptSent(false);
             setSelectedPlayer([]);
             setVotedOut(null);
             setNoImposters(false);
@@ -111,12 +108,19 @@ export function createImposterGameHandlers({
             setCurrentPrompt(typeof state.prompt === "string" ? state.prompt : "");
             setAnswers(Array.isArray(state.answers) ? state.answers : []);
             setVoteCounts(state.voteCounts || {});
-            setVotedOut(state.votedOut || null);
+            const syncedVotedOut = Array.isArray(state.votedOut) ? state.votedOut : [];
+            setVotedOut(syncedVotedOut);
             setImposter(Array.isArray(state.imposterIds) ? state.imposterIds : []);
             setFakeOut(!!state.fakeOut);
             setFakePlayer(state.fakePlayer || "");
             setWaiting(state.waiting);
             setSelectedPlayer(state.voted || []);
+            setFinalPrompts({
+                prompt: typeof state.prompt === "string" ? state.prompt : "",
+                impPrompt: typeof state.impPrompt === "string" ? state.impPrompt : "",
+                answers: Array.isArray(state.answers) ? state.answers : []
+            });
+            setNoImposters(syncedVotedOut.length === 1 && syncedVotedOut.includes("0"));
         }
     };
 }
