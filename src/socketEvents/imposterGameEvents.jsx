@@ -1,35 +1,39 @@
 export function createImposterGameHandlers({
-    setPlayers,
-    setLobbyLeader,
-    playerId,
-    setPrompt,
-    setImpPrompt,
-    setPromptSent,
-    setCurrentPrompt,
-    setFinalPrompts,
-    setAnswers,
-    setVotedOut,
-    setImposter,
-    setSelectedPlayer,
-    setFakePlayer,
-    setPhase,
-    setPlayerAnswered,
-    setVoted,
-    setGameDone,
-    setKeepScores,
-    setPlayAgainCount,
-    setVoteCounts,
-    setNoImposters,
-    setTypingIsDone,
-    setFakeOut,
-    setPlayerAnswer,
-    playReadySound,
-    playJoinSound,
-    playDCSound
+                                               setPlayers,
+                                               setLobbyLeader,
+                                               playerId,
+                                               setPrompt,
+                                               setImpPrompt,
+                                               setPromptSent,
+                                               setCurrentPrompt,
+                                               setFinalPrompts,
+                                               setAnswers,
+                                               setVotedOut,
+                                               setImposter,
+                                               setSelectedPlayer,
+                                               setFakePlayer,
+                                               setPhase,
+                                               setGameDone,
+                                               setKeepScores,
+                                               setPlayAgainCount,
+                                               setVoteCounts,
+                                               setNoImposters,
+                                               setTypingIsDone,
+                                               setFakeOut,
+                                               setPlayerAnswer,
+                                               playReadySound,
+                                               playJoinSound,
+                                               playDCSound,
+                                               setWaiting
                                     }) {
     return {
         updatePlayers: (updatedPlayers, readied) => {
-            if (readied) playReadySound();
+            if (readied) {
+                playReadySound();
+            }
+            else {
+                setWaiting(false);
+            }
 
             setPlayers(prevPlayers => {
                 if (updatedPlayers.length > prevPlayers.length) {
@@ -70,10 +74,9 @@ export function createImposterGameHandlers({
         noPromptsLeft: () => setGameDone(true),
         startNextRound: ({ prompt }) => {
             setCurrentPrompt(prompt);
-            setPlayerAnswered(false);
             setPlayerAnswer("");
             setPromptSent(false);
-            setVoted(false);
+            setWaiting(false);
             setSelectedPlayer([]);
             setVotedOut(null);
             setNoImposters(false);
@@ -87,10 +90,9 @@ export function createImposterGameHandlers({
         updateKeepScore: (keepScores) => setKeepScores(keepScores),
         updatePlayAgainCount: (voteCount) => setPlayAgainCount(voteCount),
         lobbyReset: () => {
-            setPlayerAnswered(false);
+            setWaiting(false);
             setPlayerAnswer("");
             setPromptSent(false);
-            setVoted(false);
             setSelectedPlayer([]);
             setVotedOut(null);
             setNoImposters(false);
@@ -102,6 +104,19 @@ export function createImposterGameHandlers({
             setPrompt("");
             setImpPrompt("");
             setPhase("promptPick");
+        },
+        syncState: (state) => {
+            setPhase(state.phase);
+            setPlayers(state.players || []);
+            setCurrentPrompt(typeof state.prompt === "string" ? state.prompt : "");
+            setAnswers(Array.isArray(state.answers) ? state.answers : []);
+            setVoteCounts(state.voteCounts || {});
+            setVotedOut(state.votedOut || null);
+            setImposter(Array.isArray(state.imposterIds) ? state.imposterIds : []);
+            setFakeOut(!!state.fakeOut);
+            setFakePlayer(state.fakePlayer || "");
+            setWaiting(state.waiting);
+            setSelectedPlayer(state.voted || []);
         }
     };
 }

@@ -36,6 +36,7 @@ export default function App() {
     const [altMode, setAltMode] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [lobbyLeader, setLobbyLeader] = useState(false);
+    const [currentPhase, setCurrentPhase] = useState("promptPick");
     const [playReadySound] = useSound(readySound, { volume: 0.3 });
     const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
     const [playDCSound] = useSound(dcSound, { volume: 0.3 });
@@ -98,6 +99,11 @@ export default function App() {
                 if (res.success) {
                     setInRoom(true);
                     setChatHistory(res.chat || []);
+                    if (res.rejoined){
+                        setGameStarted(true);
+                        setCurrentPhase(res.phase || "promptPick");
+                        socket.emit("requestSync", {roomCode, playerId});
+                    }
                 } else {
                     setBadCode(true);
                 }
@@ -383,6 +389,7 @@ export default function App() {
                         altMode={altMode}
                         onLeaveLobby={handleLeaveLobbyFromGame}
                         onPlayAgain={handlePlayAgainFromGame}
+                        currentPhase={currentPhase}
                     />
                 }
                 <Chat roomCode={roomCode} playerId={playerId} initialChat={chatHistory}/>
