@@ -2,7 +2,8 @@ export function createLobbyHandlers({
                                         setPlayers,
                                         setLobbyLeader,
                                         setGameStarted,
-                                        setAltMode,
+                                        setCensoredMode,
+                                        setMultipleMode,
                                         playReadySound,
                                         playJoinSound,
                                         playDCSound,
@@ -27,8 +28,9 @@ export function createLobbyHandlers({
             setGameStarted(true);
             setPlayers(serverPlayers);
         },
-        updateGameMode: (altMode) => {
-            setAltMode(altMode);
+        updateGameMode: (modes) => {
+            setCensoredMode(modes.censoredMode);
+            setMultipleMode(modes.multipleMode);
         }
     };
 }

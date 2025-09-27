@@ -33,7 +33,8 @@ export default function App() {
     const [playerId, setPlayerId] = useState("");
     const [chatHistory, setChatHistory] = useState([]);
     const [gameStarted, setGameStarted] = useState(false);
-    const [altMode, setAltMode] = useState(false);
+    const [censoredMode, setCensoredMode] = useState(false);
+    const [multipleMode, setMultipleMode] = useState(false);
     const [showGuide, setShowGuide] = useState(false);
     const [lobbyLeader, setLobbyLeader] = useState(false);
     const [currentPhase, setCurrentPhase] = useState("promptPick");
@@ -56,7 +57,8 @@ export default function App() {
             setPlayers,
             setLobbyLeader,
             setGameStarted,
-            setAltMode,
+            setCensoredMode,
+            setMultipleMode,
             playReadySound,
             playJoinSound,
             playDCSound,
@@ -71,7 +73,7 @@ export default function App() {
                 socket.off(event, handler);
             }
         };
-    }, [altMode, playDCSound, playJoinSound, playReadySound, playerId, roomCode]);
+    }, [censoredMode, playDCSound, playJoinSound, playReadySound, playerId, roomCode]);
 
     const createRoom = () => {
         if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") return setBadName(true); else {setBadName(false);}
@@ -127,12 +129,21 @@ export default function App() {
         socket.emit("readyUp", { roomCode, playerId });
     }
 
-    const handleAltMode = () => {
+    const handleCensoredMode = () => {
         if(!lobbyLeader) return;
-        const next = !altMode; // Avoid race condition with emit
-        setAltMode(next);
+        const next = !censoredMode; // Avoid race condition with emit
+        setCensoredMode(next);
         if (roomCode) {
-            socket.emit("gameMode", { roomCode, altMode: next });
+            socket.emit("gameMode", { roomCode, censoredMode: next, multipleMode: multipleMode });
+        }
+    }
+
+    const handleMultipleImpMode = () => {
+        if(!lobbyLeader) return;
+        const next = !multipleMode; // Avoid race condition with emit
+        setMultipleMode(next);
+        if (roomCode) {
+            socket.emit("gameMode", { roomCode, censoredMode: censoredMode, multipleMode: next });
         }
     }
 
@@ -339,23 +350,45 @@ export default function App() {
                                 <FormControlLabel
                                     control={
                                         <Switch
-                                            id="altMode"
-                                            onClick={handleAltMode}
-                                            checked={altMode}
+                                            id="censoredMode"
+                                            onClick={handleCensoredMode}
+                                            checked={censoredMode}
                                             color="secondary"
-                                            name="Alternate mode"
-                                            label="Alternate mode"
+                                            name="Censored mode"
+                                            label="Censored mode"
                                             disabled={lobbyLeader ? "" : "disabled"}
                                         />
                                     }
-                                    label="Alternate mode"
+                                    label="Censored mode"
                                     sx={{
                                         ".MuiFormControlLabel-label": {
-                                            color: altMode ? "purple" : "white"
+                                            color: censoredMode ? "purple" : "white",
+                                        },
+                                    }}
+                                />
+                                <Tooltip sx={{marginRight: 1 + "em"}} title="One prompt mode, imposter gets censored version of the prompt">
+                                    <HelpOutlineIcon/>
+                                </Tooltip>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            id="multipleMode"
+                                            onClick={handleMultipleImpMode}
+                                            checked={multipleMode}
+                                            color="secondary"
+                                            name="Multiple imposter mode"
+                                            label="Multiple imposter mode"
+                                            disabled={lobbyLeader ? "" : "disabled"}
+                                        />
+                                    }
+                                    label="Multiple imposter mode"
+                                    sx={{
+                                        ".MuiFormControlLabel-label": {
+                                            color: multipleMode ? "purple" : "white"
                                         }
                                     }}
                                 />
-                                <Tooltip title="One prompt mode, imposter gets censored version of the prompt">
+                                <Tooltip title="Multiple or no imposters are possible">
                                     <HelpOutlineIcon/>
                                 </Tooltip>
                             </div>
@@ -386,7 +419,7 @@ export default function App() {
                         playerId={playerId}
                         initialPlayers={players}
                         roomCode={roomCode}
-                        altMode={altMode}
+                        altMode={censoredMode}
                         onLeaveLobby={handleLeaveLobbyFromGame}
                         onPlayAgain={handlePlayAgainFromGame}
                         currentPhase={currentPhase}
