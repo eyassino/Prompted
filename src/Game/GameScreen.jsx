@@ -211,6 +211,7 @@ export default function GameScreen({
 
     return (
         <React.Fragment>
+            <div className="game-title" style={{position: "absolute", bottom: "5%", left: "3%", fontSize: "3rem"}}>{roomCode}</div>
             <div className="main-body">
                 <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", maxWidth: "60%"}}>
                     {players.map((p) => (
