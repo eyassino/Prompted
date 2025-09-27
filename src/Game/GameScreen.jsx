@@ -20,13 +20,13 @@ export default function GameScreen({
                                        roomCode,
                                        altMode,
                                        onLeaveLobby,
-                                       onPlayAgain
+                                       onPlayAgain,
+                                       currentPhase
                                    }) {
 
     //Prompts
     const [prompt, setPrompt] = useState("");
     const [impPrompt, setImpPrompt] = useState("");
-    const [promptSent, setPromptSent] = useState(false);
     const [currentPrompt, setCurrentPrompt] = useState("");
     const [finalPrompts, setFinalPrompts] = useState({});
     const [players, setPlayers] = useState(initialPlayers);
@@ -42,9 +42,7 @@ export default function GameScreen({
     const [lobbyLeader, setLobbyLeader] = useState(players.find(p => p.leader && p.playerId === playerId) !== undefined);
 
     //flags
-    const [phase, setPhase] = useState("promptPick");
-    const [playerAnswered, setPlayerAnswered] = useState(false);
-    const [voted, setVoted] = useState(false);
+    const [phase, setPhase] = useState(currentPhase || "promptPick");
     const [gameDone, setGameDone] = useState(false);
     const [noImposters, setNoImposters] = useState(false);
     const [typingIsDone, setTypingIsDone] = useState(false);
@@ -54,6 +52,7 @@ export default function GameScreen({
     const [badAnswer, setBadAnswer] = useState(false);
     const [keepScores, setKeepScores] = useState(false);
     const [badVote, setBadVote] = useState(false);
+    const [waiting, setWaiting] = useState(false);
 
     //counters
     const [voteCounts, setVoteCounts] = useState({});
@@ -77,7 +76,7 @@ export default function GameScreen({
             setImpBadPrompt(false);
         }
         socket.emit("sendPrompt", {roomCode, playerId, prompt, impPrompt});
-        setPromptSent(true);
+        setWaiting(true);
     };
 
     useEffect(() => {
@@ -87,7 +86,6 @@ export default function GameScreen({
             playerId,
             setPrompt,
             setImpPrompt,
-            setPromptSent,
             setCurrentPrompt,
             setFinalPrompts,
             setAnswers,
@@ -96,8 +94,6 @@ export default function GameScreen({
             setSelectedPlayer,
             setFakePlayer,
             setPhase,
-            setPlayerAnswered,
-            setVoted,
             setGameDone,
             setKeepScores,
             setPlayAgainCount,
@@ -108,7 +104,8 @@ export default function GameScreen({
             setPlayerAnswer,
             playReadySound,
             playJoinSound,
-            playDCSound
+            playDCSound,
+            setWaiting
         })
 
         for (const [event, handler] of Object.entries(eventHandlers)) {
@@ -129,7 +126,7 @@ export default function GameScreen({
             setBadAnswer(false);
         }
         socket.emit("submitAnswer", { roomCode, playerId, answer: playerAnswer });
-        setPlayerAnswered(true);
+        setWaiting(true);
     };
 
     const lockInVote = () => {
@@ -138,14 +135,14 @@ export default function GameScreen({
             return;
         }
         socket.emit("submitVote", { roomCode, playerId });
-        setVoted(true);
+        setWaiting(true);
     };
 
     const votePlayer = (e, selection) => {
         if (!selectedPlayer.includes(selection)) {
             selectedPlayer.push(selection);
             setBadVote(false);
-        } else {
+        } else if (!waiting) {
             selectedPlayer.splice(selectedPlayer.indexOf(selection), 1);
         }
         socket.emit("votePlayer", {roomCode, playerId, votedPlayerIds: selectedPlayer});
@@ -214,6 +211,7 @@ export default function GameScreen({
 
     return (
         <React.Fragment>
+            <div className="game-title" style={{position: "absolute", bottom: "5%", left: "3%", fontSize: "3rem"}}>{roomCode}</div>
             <div className="main-body">
                 <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", maxWidth: "60%"}}>
                     {players.map((p) => (
@@ -234,7 +232,7 @@ export default function GameScreen({
                     ))}
                 </Grid>
                 {phase === "promptPick" ? (
-                    !promptSent ? (
+                    !waiting ? (
                         <div style={{display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center", width: "100%", marginTop: 4 + "em"}}>
                             <TextField
                                 sx={{
@@ -317,7 +315,7 @@ export default function GameScreen({
                     )
                 ) : null}
                 {phase === "answer" ? (
-                    !playerAnswered ? (
+                    !waiting ? (
                     <div style={{width: "40%",marginTop: 4 + "em"}}>
                         <div style={{width: "100%"}}>
                             {currentPrompt}
@@ -366,12 +364,12 @@ export default function GameScreen({
                 ): null}
                 {phase === "voting" ? (
                     <div className="center-container">
-                        <div>
-                            <div>{voted ? "Voted! Waiting for everyone to finish voting..." : "Discuss! who do you think the imposter is?"}</div>
+                        <div style={{border: "2px dashed purple", padding: 1 + "em"}}>
+                            <div>{waiting ? "Voted! Waiting for everyone to finish voting..." : "Discuss! who do you think the imposter is?"}</div>
                             <br/>
                             <div><strong>The prompt was:</strong> {currentPrompt} </div>
                         </div>
-                            <Box container sx={{marginTop: 1 + "em", border: "2px dashed purple", maxHeight: "50vh", overflow: "auto"}}>
+                            <Box sx={{marginTop: 1 + "em", border: "2px dashed purple", maxHeight: "50vh", overflow: "auto"}}>
                             {answers.map((a) => (
                                 <Card
                                     sx={{ overflow: "visible" }}
@@ -379,7 +377,7 @@ export default function GameScreen({
                                     style={{ backgroundColor: selectedPlayer.includes(a.playerId) ? "purple" : `rgba(120, 38, 153, 0.3)`}}
                                     key={a.playerId}
                                     onClick={e => {
-                                    if (!voted)
+                                    if (!waiting)
                                         votePlayer(e, a.playerId);
                                 }}>
                                     <Badge badgeContent={voteCounts[a.playerId]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
@@ -403,7 +401,7 @@ export default function GameScreen({
                                     overflow: "visible"
                                 }}
                                 onClick={e => {
-                                    if (!voted)
+                                    if (!waiting)
                                         votePlayer(e, "0");
                                 }}
                             >
@@ -416,7 +414,7 @@ export default function GameScreen({
                                 </Badge>
                             </Card>
                         </Stack>
-                        {!voted ? (
+                        {!waiting ? (
                             <Stack direction="column" alignItems="center" justifyContent="center" sx={{marginTop: 2 + "em", minWidth: "50%"}}>
                                 <Button
                                     sx={{
@@ -469,9 +467,9 @@ export default function GameScreen({
                         </Box>
                         {!noImposters ? (
                             <React.Fragment>
-                                <div style={{marginRight: "auto"}}><strong>Majority of you voted for:</strong></div>
-                                <div style={{display: "flex", justifyContent: "center", flexDirection: "row", alignItems: "center", width: "100%"}}>
-                                    {votedOut.map((p) => (
+                                <div><strong>Majority of you voted for:</strong></div>
+                                <div style={{display: "flex", justifyContent: "center", flexDirection: "row", alignItems: "center", border: "2px dashed purple", marginTop: 1 + "em"}}>
+                                    {Array.isArray(votedOut) ? votedOut.map((p) => (
                                         <Card
                                             style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`}}
                                             key={p.playerId}
@@ -485,7 +483,7 @@ export default function GameScreen({
                                                 </Typography>
                                             </CardContent>
                                         </Card>
-                                    ))}
+                                    )) : null}
                                 </div>
                                 {typingIsDone && Array.isArray(votedOut) && votedOut.length > 0 && !votedOut.some(p => p && typeof p === "object" && imposter.includes(p.playerId)) ? (
                                     <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
