@@ -486,7 +486,7 @@ export default function GameScreen({
                                     )) : null}
                                 </div>
                                 {typingIsDone && Array.isArray(votedOut) && votedOut.length > 0 && !votedOut.some(p => p && typeof p === "object" && imposter.includes(p.playerId)) ? (
-                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
+                                    <div ref={ref} style={{marginTop: 1 + "em"}} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
                                 ): null}
                             </React.Fragment>
                         ) : (
