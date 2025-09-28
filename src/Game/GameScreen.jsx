@@ -1,6 +1,6 @@
 import { socket } from "../socket";
-import React, {useEffect, useState} from "react";
-import {Button, Grid, Stack} from "@mui/material";
+import React, {useEffect, useMemo, useState} from "react";
+import {Button, Grid, LinearProgress, Stack} from "@mui/material";
 import TextField from "@mui/material/TextField";
 import prompts from "../assets/prompts.json";
 import {Card, CardContent, Typography, Badge, FormControlLabel, Switch} from "@mui/material";
@@ -57,12 +57,37 @@ export default function GameScreen({
     //counters
     const [voteCounts, setVoteCounts] = useState({});
     const [playAgainCount, setPlayAgainCount] = useState(0);
+    const PHASE_MS = 120000;
 
     //sounds
     const [playReadySound] = useSound(readySound, { volume: 0.3 });
     const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
     const [playDCSound] = useSound(dcSound, { volume: 0.3 });
 
+    //timers
+    const [timerDeadline, setTimerDeadline] = useState(null);
+    const [timerPhase, setTimerPhase] = useState(null);
+    const [dateNow, setDateNow] = useState(Date.now());
+
+    useEffect(() => {
+        if (!timerDeadline) return;
+        const t = setInterval(() => setDateNow(Date.now()), 200);
+        return () => clearInterval(t);
+    }, [timerDeadline]);
+
+    const { msRemaining, percentRemaining } = useMemo(() => {
+        if (!timerDeadline) return { msRemaining: 0, percentRemaining: 0 };
+        const remaining = Math.max(0, timerDeadline - dateNow);
+        const pct = Math.max(0, Math.min(100, (remaining / PHASE_MS) * 100));
+        return { msRemaining: remaining, percentRemaining: pct };
+    }, [timerDeadline, dateNow]);
+
+    const formattedTime = useMemo(() => {
+        const totalSec = Math.ceil(msRemaining / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        return `${m}:${String(s).padStart(2, "0")}`;
+    }, [msRemaining]);
 
     const sendPrompt = () => {
         if(!prompt || prompt.length > 115) {
@@ -105,7 +130,9 @@ export default function GameScreen({
             playReadySound,
             playJoinSound,
             playDCSound,
-            setWaiting
+            setWaiting,
+            setTimerDeadline,
+            setTimerPhase
         })
 
         for (const [event, handler] of Object.entries(eventHandlers)) {
@@ -118,6 +145,10 @@ export default function GameScreen({
             }
         };
     }, [playDCSound, playJoinSound, playReadySound, playerId]);
+
+    useEffect(() =>{ // in case listeners are built after emits (had issue with timer)
+        socket.emit("requestSync", {roomCode, playerId});
+    },[]);
 
     const submitAnswer = () => {
         if(!playerAnswer || playerAnswer.length > 115) {
@@ -209,10 +240,38 @@ export default function GameScreen({
             socket.emit("keepScore", { roomCode, keepScores: next });
     }
 
+    const showTimerBar = (phase === "promptPick" || phase === "answer" || phase === "voting")
+        && timerPhase === phase
+        && !!timerDeadline;
+
     return (
         <React.Fragment>
             <div className="game-title" style={{position: "absolute", bottom: "5%", left: "3%", fontSize: "3rem"}}>{roomCode}</div>
             <div className="main-body">
+
+                {showTimerBar ? (
+                    <div style={{ width: "60%", margin: "1em auto" }}>
+                        <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
+                            <span style={{ color: msRemaining <= 10000 ? "#ff6b6b" : "white", fontVariantNumeric: "tabular-nums" }}>
+                                {formattedTime}
+                            </span>
+                        </div>
+                        <LinearProgress
+                            variant="determinate"
+                            value={percentRemaining}
+                            sx={{
+                                height: 10,
+                                borderRadius: 5,
+                                "& .MuiLinearProgress-bar": {
+                                    backgroundColor: msRemaining <= 10000 ? "#ff6b6b" : "#782699"
+                                },
+                                backgroundColor: "rgba(255,255,255,0.15)"
+                            }}
+                            color="secondary"
+                        />
+                    </div>
+                ) : null}
+
                 <Grid container spacing={1} sx={{justifyContent: "center", alignItems: "center", maxWidth: "60%"}}>
                     {players.map((p) => (
                         <Card

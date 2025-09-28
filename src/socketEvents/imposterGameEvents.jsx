@@ -23,7 +23,9 @@ export function createImposterGameHandlers({
                                                playReadySound,
                                                playJoinSound,
                                                playDCSound,
-                                               setWaiting
+                                               setWaiting,
+                                               setTimerDeadline,
+                                               setTimerPhase
                                     }) {
     return {
         updatePlayers: (updatedPlayers, readied) => {
@@ -121,6 +123,12 @@ export function createImposterGameHandlers({
                 answers: Array.isArray(state.answers) ? state.answers : []
             });
             setNoImposters(syncedVotedOut.length === 1 && syncedVotedOut.includes("0"));
+            setTimerDeadline(state.deadline || null);
+            setTimerPhase(state.timerPhase || null);
+        },
+        timerStart: ({ phase, deadline }) => {
+            setTimerPhase(phase);
+            setTimerDeadline(deadline);
         }
     };
 }
