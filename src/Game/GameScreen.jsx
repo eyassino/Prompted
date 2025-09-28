@@ -94,7 +94,7 @@ export default function GameScreen({
             playTickingSound();
         }
         return `${m}:${String(s).padStart(2, "0")}`;
-    }, [msRemaining, playTickingSound]);
+    }, [msRemaining, playTickingSound, tickingPlayed]);
 
     const sendPrompt = () => {
         if(!prompt || prompt.length > 115) {
