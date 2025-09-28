@@ -25,7 +25,8 @@ export function createImposterGameHandlers({
                                                playDCSound,
                                                setWaiting,
                                                setTimerDeadline,
-                                               setTimerPhase
+                                               setTimerPhase,
+                                               setTickingPlayed
                                     }) {
     return {
         updatePlayers: (updatedPlayers, readied) => {
@@ -127,6 +128,7 @@ export function createImposterGameHandlers({
             setTimerPhase(state.timerPhase || null);
         },
         timerStart: ({ phase, deadline }) => {
+            setTickingPlayed(false);
             setTimerPhase(phase);
             setTimerDeadline(deadline);
         }

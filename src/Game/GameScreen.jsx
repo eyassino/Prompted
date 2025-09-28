@@ -13,6 +13,7 @@ import useSound from 'use-sound'
 import readySound from "../assets/ready.mp3";
 import joinSound from "../assets/join.mp3";
 import dcSound from "../assets/dc.mp3";
+import tickingSound from "../assets/ticking.mp3";
 
 export default function GameScreen({
                                        playerId,
@@ -53,6 +54,7 @@ export default function GameScreen({
     const [keepScores, setKeepScores] = useState(false);
     const [badVote, setBadVote] = useState(false);
     const [waiting, setWaiting] = useState(false);
+    const [tickingPlayed, setTickingPlayed] = useState(false);
 
     //counters
     const [voteCounts, setVoteCounts] = useState({});
@@ -63,6 +65,7 @@ export default function GameScreen({
     const [playReadySound] = useSound(readySound, { volume: 0.3 });
     const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
     const [playDCSound] = useSound(dcSound, { volume: 0.3 });
+    const [playTickingSound] = useSound(tickingSound, { volume: 0.3 });
 
     //timers
     const [timerDeadline, setTimerDeadline] = useState(null);
@@ -86,8 +89,12 @@ export default function GameScreen({
         const totalSec = Math.ceil(msRemaining / 1000);
         const m = Math.floor(totalSec / 60);
         const s = totalSec % 60;
+        if (totalSec === 10 && !tickingPlayed) {
+            setTickingPlayed(true);
+            playTickingSound();
+        }
         return `${m}:${String(s).padStart(2, "0")}`;
-    }, [msRemaining]);
+    }, [msRemaining, playTickingSound]);
 
     const sendPrompt = () => {
         if(!prompt || prompt.length > 115) {
@@ -132,7 +139,8 @@ export default function GameScreen({
             playDCSound,
             setWaiting,
             setTimerDeadline,
-            setTimerPhase
+            setTimerPhase,
+            setTickingPlayed
         })
 
         for (const [event, handler] of Object.entries(eventHandlers)) {
