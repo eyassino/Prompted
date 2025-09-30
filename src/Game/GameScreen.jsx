@@ -154,8 +154,9 @@ export default function GameScreen({
         };
     }, [playDCSound, playJoinSound, playReadySound, playerId]);
 
-    useEffect(() =>{ // in case listeners are built after emits (had issue with timer)
+    useEffect(() =>{ // Run on load, in case listeners are built after emits (had issue with timer)
         socket.emit("requestSync", {roomCode, playerId});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[]);
 
     const submitAnswer = () => {
@@ -534,23 +535,40 @@ export default function GameScreen({
                         </Box>
                         {!noImposters ? (
                             <React.Fragment>
-                                <div><strong>Majority of you voted for:</strong></div>
-                                <div style={{display: "flex", justifyContent: "center", flexDirection: "row", alignItems: "center", border: "2px dashed purple", marginTop: 1 + "em"}}>
-                                    {Array.isArray(votedOut) ? votedOut.map((p) => (
-                                        <Card
-                                            style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`}}
-                                            key={p.playerId}
-                                        >
-                                            <CardContent>
-                                                <Typography style={{ color: "white" }}>
-                                                    {p.name}
-                                                    <br/>
-                                                    <br/>
-                                                    <span>Answered with: {p.answer} </span>
-                                                </Typography>
-                                            </CardContent>
-                                        </Card>
-                                    )) : null}
+                                <div className="reveal-columns">
+                                    <div className="reveal-col">
+                                        <strong>Majority voted:</strong>
+                                        <Box className="player-card-box">
+                                            {Array.isArray(votedOut) ? votedOut.map((p) => (
+                                                <Card key={p.playerId} style={{ backgroundColor: "rgba(120, 38, 153, 0.3)" }}>
+                                                    <CardContent>
+                                                        <Typography style={{ color: "white" }}>
+                                                            {p.name}
+                                                            <br/><br/>
+                                                            <span>Answered with: {p.answer}</span>
+                                                        </Typography>
+                                                    </CardContent>
+                                                </Card>
+                                            )) : null}
+                                        </Box>
+                                    </div>
+
+                                    <div className="reveal-col">
+                                        <strong>The imposter{imposter.length !== 1 ? "s" : ""}:</strong>
+                                        <Box className="player-card-box">
+                                            {Array.isArray(finalPrompts.answers) ? finalPrompts.answers.filter(p => imposter.includes(p.playerId)).map((p) => (
+                                                <Card key={p.playerId} style={{ backgroundColor: "rgba(120, 38, 153, 0.3)" }}>
+                                                    <CardContent>
+                                                        <Typography style={{ color: "white" }}>
+                                                            {p.name}
+                                                            <br/><br/>
+                                                            <span>Answered with: {p.answer}</span>
+                                                        </Typography>
+                                                    </CardContent>
+                                                </Card>
+                                            )) : null}
+                                        </Box>
+                                    </div>
                                 </div>
                                 {typingIsDone && Array.isArray(votedOut) && votedOut.length > 0 && !votedOut.some(p => p && typeof p === "object" && imposter.includes(p.playerId)) ? (
                                     <div ref={ref} style={{marginTop: 1 + "em"}} className={`fadeUp ${inView ? "fade-in" : ""}`}><strong>Unlucky round or weird answer?</strong></div>
@@ -560,29 +578,29 @@ export default function GameScreen({
                             <>
                             <div><strong>Most of you voted that there are no imposters this round!</strong></div>
                                 {typingIsDone && imposter.length > 0 ? (
-                                    <React.Fragment>
+                                <React.Fragment>
                                     <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
                                     <br/>
-                                    <span>But, sadly, that is wrong. Imposter{imposter.length !== 1 ? "s" : ""} answered with:</span></div>
-                                    <Box sx={{overflow: "auto", maxHeight: "30vh", marginTop: 1 + "em", minWidth: "100", border: "2px dashed purple", padding: "2px", marginBottom: 1 + "em"}}>
-                                {finalPrompts.answers.filter(p => imposter.includes(p.playerId)).map((p) => (
-                                    <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
-                                        <Card
-                                            style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`, display: "inline-block"}}
-                                            key={p.playerId}
-                                        >
-                                            <CardContent>
-                                                <Typography style={{ color: "white" }}>
-                                                    {p.name}
-                                                    <br/>
-                                                    <br/>
-                                                    <span>Answered with: {p.answer} </span>
-                                                </Typography>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                ))}
-                                </Box>
+                                    <span>Unfortunately, that is wrong. Imposter{imposter.length !== 1 ? "s" : ""} answered with:</span></div>
+                                    <Box className="player-card-box">
+                                        {Array.isArray(finalPrompts.answers) ? finalPrompts.answers.filter(p => imposter.includes(p.playerId)).map((p) => (
+                                            <div ref={ref} className={`fadeUp ${inView ? "fade-in" : ""}`}>
+                                                <Card
+                                                    style={{ backgroundColor: `rgba(120, 38, 153, 0.3)`, margin: 1 + `em`}}
+                                                    key={p.playerId}
+                                                >
+                                                    <CardContent>
+                                                        <Typography style={{ color: "white" }}>
+                                                            {p.name}
+                                                            <br/>
+                                                            <br/>
+                                                            <span>Answered with: {p.answer} </span>
+                                                        </Typography>
+                                                    </CardContent>
+                                                </Card>
+                                            </div>
+                                        )) : null}
+                                    </Box>
                                 </React.Fragment>
                                 ) : null}
                             </>
@@ -590,7 +608,8 @@ export default function GameScreen({
                         {gameDone ? (
                             <Button
                                 sx={{
-                                    marginLeft: "auto"
+                                    marginLeft: "auto",
+                                    marginTop: 1 + "em"
                                 }}
                                 color="secondary"
                                 variant="outlined"
@@ -599,7 +618,8 @@ export default function GameScreen({
                         ) : (
                             <Button
                                 sx={{
-                                    marginLeft: "auto"
+                                    marginLeft: "auto",
+                                    marginTop: 1 + "em"
                                 }}
                                 color="secondary"
                                 variant="outlined"
