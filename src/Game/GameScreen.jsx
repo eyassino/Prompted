@@ -154,8 +154,9 @@ export default function GameScreen({
         };
     }, [playDCSound, playJoinSound, playReadySound, playerId]);
 
-    useEffect(() =>{ // in case listeners are built after emits (had issue with timer)
+    useEffect(() =>{ // Run on load, in case listeners are built after emits (had issue with timer)
         socket.emit("requestSync", {roomCode, playerId});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     },[]);
 
     const submitAnswer = () => {
