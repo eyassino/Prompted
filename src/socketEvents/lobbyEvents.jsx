@@ -7,7 +7,8 @@ export function createLobbyHandlers({
                                         playReadySound,
                                         playJoinSound,
                                         playDCSound,
-                                        playerId
+                                        playerId,
+                                        setPublicLobbies
                                     }) {
     return {
         updatePlayers: (updatedPlayers, readied) => {
@@ -31,6 +32,9 @@ export function createLobbyHandlers({
         updateGameMode: (modes) => {
             setCensoredMode(modes.censoredMode);
             setMultipleMode(modes.multipleMode);
-        }
+        },
+        updatePublicLobbies: (publicLobbies) => {
+            setPublicLobbies(publicLobbies);
+        },
     };
 }

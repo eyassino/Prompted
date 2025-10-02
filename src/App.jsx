@@ -41,6 +41,8 @@ export default function App() {
     const [playReadySound] = useSound(readySound, { volume: 0.3 });
     const [playJoinSound] = useSound(joinSound, { volume: 0.3 });
     const [playDCSound] = useSound(dcSound, { volume: 0.3 });
+    const [publicLobbies, setPublicLobbies] = useState([]);
+    const [privateLobby, setPrivateLobby] = useState(false);
 
     // On first load: get or create a persistent playerId
     useEffect(() => {
@@ -50,6 +52,9 @@ export default function App() {
             localStorage.setItem("playerId", storedId);
         }
         setPlayerId(storedId);
+        socket.emit("requestPublicLobbies", (lobbies) => {
+            setPublicLobbies(lobbies);
+        });
     }, []);
 
     useEffect(() => {
@@ -62,7 +67,8 @@ export default function App() {
             playReadySound,
             playJoinSound,
             playDCSound,
-            playerId
+            playerId,
+            setPublicLobbies
         })
         for (const [event, handler] of Object.entries(handlers)) {
             socket.on(event, handler);
@@ -77,7 +83,7 @@ export default function App() {
 
     const createRoom = () => {
         if (!name || (name.length > 15) || name.replace(/\s+/g, ' ').trim() === "") return setBadName(true); else {setBadName(false);}
-        socket.emit("createRoom", name.replace(/\s+/g, ' ').trim(), playerId, (code) => {
+        socket.emit("createRoom", name.replace(/\s+/g, ' ').trim(), playerId, !privateLobby, (code) => {
             setRoomCode(code);
             setInRoom(true);
         });
@@ -220,12 +226,17 @@ export default function App() {
         setShowGuide(!showGuide);
     }
 
+    function handlePrivateLobby () {
+        setPrivateLobby(!privateLobby);
+    }
+
+
     if (!inRoom) {
         return (
             <div className="main-body">
                 <h1 className="game-title">Prompted</h1>
                 <Instructions hidden={!showGuide} onHide={handleShowGuide} />
-                    <Box sx={{ '& button': { m: 1 } }}>
+                    <Grid sx={{marginLeft: "10%"}} container spacing={2} flexDirection="column">
                         <ThemeProvider theme={buttonTheme}>
                         <div>
                             <TextField
@@ -264,6 +275,25 @@ export default function App() {
                             >
                                 Create Room
                             </Button>
+                            <FormControlLabel
+                                sx={{
+                                    ".MuiFormControlLabel-label": {
+                                        color: privateLobby ? "purple" : "white",
+                                    },
+                                    marginLeft: 0.5 + 'em'
+                                }}
+                                control={
+                                    <Switch
+                                        id="private"
+                                        onClick={handlePrivateLobby}
+                                        checked={privateLobby}
+                                        color="secondary"
+                                        name="Private lobby"
+                                        label="Private lobby"
+                                    />
+                                }
+                                label="Private"
+                            />
                         </div>
                         <div>
                             <TextField
@@ -305,19 +335,41 @@ export default function App() {
                             >
                                 Join Room
                             </Button>
+                            <Button
+                                sx={{
+                                    marginLeft: 1 + 'em',
+                                }}
+                                variant="outlined"
+                                color="secondary"
+                                onClick={handleShowGuide}
+                            >
+                                Guide
+                            </Button>
                         </div>
-                        <Button
-                            sx={{
-                                float: "right",
-                            }}
-                            variant="outlined"
-                            color="secondary"
-                            onClick={handleShowGuide}
-                        >
-                            Guide
-                        </Button>
                     </ThemeProvider>
-                </Box>
+                </Grid>
+                <fieldset style={{marginTop: 2 + 'em'}} className="player-card-box">
+                    <legend style={{marginRight: "auto", marginLeft: "auto"}}>Public lobby list</legend>
+                    {publicLobbies.length === 0 ? (
+                        <span>No public lobbies yet! Create a public lobby for others to see it here</span>
+                    ) : null}
+                    {publicLobbies.map((p) => (
+                        <Card
+                            key={p.roomCode}
+                            style={{ backgroundColor: "rgba(120, 38, 153, 0.3)" }}
+                            sx={{cursor: "pointer"}}
+                            onClick={() => {setRoomCode(p.roomCode);}}
+                        >
+                            <CardContent>
+                                <Typography style={{ color: "white" }}>
+                                    {p.roomCode}
+                                    <br/><br/>
+                                    <span>Players: {p.playerCount}</span>
+                                </Typography>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </fieldset>
             </div>
         );
     }
