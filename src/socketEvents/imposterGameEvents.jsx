@@ -131,6 +131,10 @@ export function createImposterGameHandlers({
             setTickingPlayed(false);
             setTimerPhase(phase);
             setTimerDeadline(deadline);
+        },
+        clearTimer: () => {
+            setTimerPhase(null);
+            setTimerDeadline(null);
         }
     };
 }

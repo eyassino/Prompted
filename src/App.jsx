@@ -4,7 +4,6 @@ import Chat from "./Game/Chat";
 import { socket } from "./socket";
 import React from 'react';
 import GameScreen from "./Game/GameScreen";
-import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import {
     Button,
@@ -350,10 +349,10 @@ export default function App() {
                 </Grid>
                 <fieldset style={{marginTop: 2 + 'em'}} className="player-card-box">
                     <legend style={{marginRight: "auto", marginLeft: "auto"}}>Public lobby list</legend>
-                    {publicLobbies.length === 0 ? (
+                    {publicLobbies.filter(p => p.inGame === false).length === 0 ? (
                         <span>No public lobbies yet! Create a public lobby for others to see it here</span>
                     ) : null}
-                    {publicLobbies.map((p) => (
+                    {publicLobbies.filter(p => p.inGame === false).map((p) => (
                         <Card
                             key={p.roomCode}
                             style={{ backgroundColor: "rgba(120, 38, 153, 0.3)" }}
