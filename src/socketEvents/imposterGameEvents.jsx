@@ -33,7 +33,9 @@ export function createImposterGameHandlers({
             if (readied) {
                 playReadySound();
             }
-            else {
+            else if (updatedPlayers.find(p => p.playerId === playerId).ready){
+                setWaiting(true);
+            } else {
                 setWaiting(false);
             }
 

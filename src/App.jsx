@@ -106,7 +106,7 @@ export default function App() {
                 if (res.success) {
                     setInRoom(true);
                     setChatHistory(res.chat || []);
-                    if (res.rejoined){
+                    if (res.rejoined && res.inGame){
                         setGameStarted(true);
                         setCurrentPhase(res.phase || "promptPick");
                         socket.emit("requestSync", {roomCode, playerId});

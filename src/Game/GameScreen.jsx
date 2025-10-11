@@ -14,6 +14,7 @@ import readySound from "../assets/ready.mp3";
 import joinSound from "../assets/join.mp3";
 import dcSound from "../assets/dc.mp3";
 import tickingSound from "../assets/ticking.mp3";
+import {DecodeGame} from "../Helper/DecodeGame.jsx";
 
 export default function GameScreen({
                                        playerId,
@@ -633,7 +634,9 @@ export default function GameScreen({
                         {(() => {
                             const names = players.map(p => p.name);
                             const scores = players.map(p => p.score);
+                            const miniScores = players.map(p => p.miniGameScore ?? 0);
                             const maxScore = Math.max(...scores);
+                            const maxMiniScore = Math.max(...miniScores);
 
                             const barColors = players.map(p =>
                                 p.score === maxScore ? "#ffd700" : "#782699"
@@ -671,6 +674,12 @@ export default function GameScreen({
                                         Winner{players.filter(p=>p.score===maxScore).length > 1 ? "s" : ""}:{" "}
                                         {players.filter(p=>p.score===maxScore).map(p=>p.name).join(", ")}
                                     </div>
+                                    {players.filter(p=>p.miniGameScore===maxMiniScore).length > 0 ? (
+                                        <div style={{textAlign: "center", color: "#ffd700", marginTop: 12}}>
+                                            Best decoder{players.filter(p=>p.miniGameScore===maxMiniScore).length > 1 ? "s" : ""}:{" "}
+                                            {players.filter(p=>p.miniGameScore===maxMiniScore).map(p=>p.name).join(", ")}
+                                        </div>
+                                    ) : null}
                                 </div>
                             );
                         })()}
@@ -723,6 +732,12 @@ export default function GameScreen({
                         </div>
                     </React.Fragment>
                 )}
+                {waiting && phase !== "voting" ? (
+                    <DecodeGame
+                        roomCode={roomCode}
+                        playerId={playerId}
+                    />
+                ) : null}
             </div>
         </React.Fragment>
     );
