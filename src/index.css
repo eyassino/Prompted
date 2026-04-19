@@ -112,7 +112,7 @@ button:focus-visible {
     text-align: center;
     margin-top: 100px;
     background: linear-gradient(90deg, #782699, #7afcff);
-    -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 0 5px rgba(120, 38, 153, 0.3), 0 0 10px rgba(122,252,255,0.2);
     transition: text-shadow 0.1s ease;
@@ -241,4 +241,13 @@ button:focus-visible {
 
 .player-card-box .MuiCard-root {
     display: inline-block;
+}
+
+/* CSS for mobile devices */
+@media (max-width: 1000px) {
+
+    .game-title {
+        font-size: 3rem;
+    }
+
 }

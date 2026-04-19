@@ -42,6 +42,7 @@ export default function App() {
     const [playDCSound] = useSound(dcSound, { volume: 0.3 });
     const [publicLobbies, setPublicLobbies] = useState([]);
     const [privateLobby, setPrivateLobby] = useState(false);
+    const [isMobile] = useState(window.innerWidth <= 768);
 
     // On first load: get or create a persistent playerId
     useEffect(() => {
@@ -250,7 +251,8 @@ export default function App() {
                                     },
                                     "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
                                         borderBottomColor: "#fff",
-                                    }
+                                    },
+                                    marginBottom: 1 + 'em'
                                 }}
                                 error={badName}
                                 color="secondary"
@@ -267,32 +269,34 @@ export default function App() {
                                     }
                                 }}
                             />
-                            <Button
-                                variant="outlined"
-                                color="secondary"
-                                onClick={createRoom}
-                            >
-                                Create Room
-                            </Button>
-                            <FormControlLabel
-                                sx={{
-                                    ".MuiFormControlLabel-label": {
-                                        color: privateLobby ? "purple" : "white",
-                                    },
-                                    marginLeft: 0.5 + 'em'
-                                }}
-                                control={
-                                    <Switch
-                                        id="private"
-                                        onClick={handlePrivateLobby}
-                                        checked={privateLobby}
-                                        color="secondary"
-                                        name="Private lobby"
-                                        label="Private lobby"
-                                    />
-                                }
-                                label="Private"
-                            />
+                            <div style={{float: isMobile ? "none" : "right"}}>
+                                <Button
+                                    variant="outlined"
+                                    color="secondary"
+                                    onClick={createRoom}
+                                >
+                                    Create Room
+                                </Button>
+                                <FormControlLabel
+                                    sx={{
+                                        ".MuiFormControlLabel-label": {
+                                            color: privateLobby ? "purple" : "white",
+                                        },
+                                        marginLeft: 0.5 + 'em'
+                                    }}
+                                    control={
+                                        <Switch
+                                            id="private"
+                                            onClick={handlePrivateLobby}
+                                            checked={privateLobby}
+                                            color="secondary"
+                                            name="Private lobby"
+                                            label="Private lobby"
+                                        />
+                                    }
+                                    label="Private"
+                                />
+                            </div>
                         </div>
                         <div>
                             <TextField
@@ -307,7 +311,8 @@ export default function App() {
                                     },
                                     "& .MuiInput-underline:hover:not(.Mui-disabled):before": {
                                         borderBottomColor: "#fff",
-                                    }
+                                    },
+                                    marginBottom: 1 + 'em'
                                 }}
                                 color="secondary"
                                 error={badCode}
@@ -323,31 +328,33 @@ export default function App() {
                                     }
                                 }}
                             />
-                            <Button
-                                sx={{
-                                    paddingRight: 2 + 'em',
-                                    paddingLeft: 2 + 'em',
-                                }}
-                                variant="outlined"
-                                color="secondary"
-                                onClick={joinRoom}
-                            >
-                                Join Room
-                            </Button>
-                            <Button
-                                sx={{
-                                    marginLeft: 1 + 'em',
-                                }}
-                                variant="outlined"
-                                color="secondary"
-                                onClick={handleShowGuide}
-                            >
-                                Guide
-                            </Button>
+                            <div style={{float: isMobile ? "none" : "right"}}>
+                                <Button
+                                    sx={{
+                                        paddingRight: 2 + 'em',
+                                        paddingLeft: 2 + 'em',
+                                    }}
+                                    variant="outlined"
+                                    color="secondary"
+                                    onClick={joinRoom}
+                                >
+                                    Join Room
+                                </Button>
+                                <Button
+                                    sx={{
+                                        marginLeft: 1 + 'em',
+                                    }}
+                                    variant="outlined"
+                                    color="secondary"
+                                    onClick={handleShowGuide}
+                                >
+                                    Guide
+                                </Button>
+                            </div>
                         </div>
                     </ThemeProvider>
                 </Grid>
-                <fieldset style={{marginTop: 2 + 'em'}} className="player-card-box">
+                <fieldset style={{marginTop: 2 + 'em', marginRight: "5%", marginLeft: "5%"}} className="player-card-box">
                     <legend style={{marginRight: "auto", marginLeft: "auto"}}>Public lobby list</legend>
                     {publicLobbies.filter(p => p.inGame === false).length === 0 ? (
                         <span>No public lobbies yet! Create a public lobby for others to see it here</span>
