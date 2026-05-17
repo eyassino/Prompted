@@ -12,11 +12,12 @@ import {
     FormControlLabel,
     FormGroup, Grid,
     Switch,
-    ThemeProvider, Tooltip, Typography
+    ThemeProvider, Typography
 } from "@mui/material";
 import { createLobbyHandlers } from "./socketEvents/lobbyEvents.jsx"
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import {Instructions} from "./Helper/Instructions.jsx";
+import { PopupHelper } from "./Helper/PopupHelper.jsx";
+import { guides } from "./Helper/guides.jsx";
 import useSound from 'use-sound'
 import readySound from "./assets/ready.mp3";
 import joinSound from "./assets/join.mp3";
@@ -34,7 +35,7 @@ export default function App() {
     const [gameStarted, setGameStarted] = useState(false);
     const [censoredMode, setCensoredMode] = useState(false);
     const [multipleMode, setMultipleMode] = useState(false);
-    const [showGuide, setShowGuide] = useState(false);
+    const [activeGuide, setActiveGuide] = useState(null);
     const [lobbyLeader, setLobbyLeader] = useState(false);
     const [currentPhase, setCurrentPhase] = useState("promptPick");
     const [playReadySound] = useSound(readySound, { volume: 0.3 });
@@ -128,6 +129,7 @@ export default function App() {
         setInRoom(false);
         setRoomCode("");
         setGameStarted(false);
+        setActiveGuide(null);
         localStorage.removeItem("roomCode");
     };
 
@@ -185,6 +187,7 @@ export default function App() {
     }, [roomCode]);
 
     useEffect(() => {
+        if (isMobile) return;
         function handleMouseMove(e) {
             const x = (e.clientX / window.innerWidth) * 100;
             const y = (e.clientY / window.innerHeight) * 100;
@@ -222,8 +225,16 @@ export default function App() {
     }, [gameStarted]);
 
 
-    function handleShowGuide() {
-        setShowGuide(!showGuide);
+    function toggleMainGuide() {
+        setActiveGuide((current) => (current === "main" ? null : "main"));
+    }
+
+    function showGuide(guideId) {
+        setActiveGuide(guideId);
+    }
+
+    function hideGuide() {
+        setActiveGuide(null);
     }
 
     function handlePrivateLobby () {
@@ -235,7 +246,13 @@ export default function App() {
         return (
             <div className="main-body">
                 <h1 className="game-title">Prompted</h1>
-                <Instructions hidden={!showGuide} onHide={handleShowGuide} />
+                <PopupHelper
+                    hidden={activeGuide !== "main"}
+                    onHide={hideGuide}
+                    title={guides.main.title}
+                >
+                    {guides.main.body}
+                </PopupHelper>
                     <Grid sx={{marginLeft: "10%"}} container spacing={2} flexDirection="column">
                         <ThemeProvider theme={buttonTheme}>
                         <div>
@@ -346,7 +363,7 @@ export default function App() {
                                     }}
                                     variant="outlined"
                                     color="secondary"
-                                    onClick={handleShowGuide}
+                                    onClick={toggleMainGuide}
                                 >
                                     Guide
                                 </Button>
@@ -403,8 +420,15 @@ export default function App() {
                                 Leave Room
                             </Button>
                         </div>
+                        <PopupHelper
+                            hidden={activeGuide !== "censored" && activeGuide !== "multiple"}
+                            onHide={hideGuide}
+                            title={activeGuide ? guides[activeGuide].title : ""}
+                        >
+                            {activeGuide ? guides[activeGuide].body : null}
+                        </PopupHelper>
                         <FormGroup>
-                            <div style={{ marginTop: 1 + `em`}}>
+                            <div style={{ marginTop: 1 + `em`, marginLeft: 2 + `em`, marginRight: 2 + `em`, display: "flex", justifyContent: "center", alignItems: "center"}}>
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -415,6 +439,7 @@ export default function App() {
                                             name="Censored mode"
                                             label="Censored mode"
                                             disabled={lobbyLeader ? "" : "disabled"}
+                                            size={isMobile ? "small" : ""}
                                         />
                                     }
                                     label="Censored mode"
@@ -424,9 +449,10 @@ export default function App() {
                                         },
                                     }}
                                 />
-                                <Tooltip sx={{marginRight: 1 + "em"}} title="One prompt mode, imposter gets censored version of the prompt">
-                                    <HelpOutlineIcon/>
-                                </Tooltip>
+                                <HelpOutlineIcon
+                                    sx={{ marginRight: 1 + "em", cursor: "pointer" }}
+                                    onClick={() => showGuide("censored")}
+                                />
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -437,6 +463,7 @@ export default function App() {
                                             name="Multiple imposter mode"
                                             label="Multiple imposter mode"
                                             disabled={lobbyLeader ? "" : "disabled"}
+                                            size={isMobile ? "small" : ""}
                                         />
                                     }
                                     label="Multiple imposter mode"
@@ -446,13 +473,15 @@ export default function App() {
                                         }
                                     }}
                                 />
-                                <Tooltip title="Multiple or no imposters are possible">
-                                    <HelpOutlineIcon/>
-                                </Tooltip>
+                                <HelpOutlineIcon
+                                    sx={{ cursor: "pointer" }}
+                                    onClick={() => showGuide("multiple")}
+                                />
                             </div>
                         </FormGroup>
                         <Grid container spacing={1} className="center-container">
                             {players.map((p) => (
+                                <React.Fragment>
                                 <Card key={p.playerId}
                                       className={`player-card ${p.ready ? 'ready-glow' : ''}`}
                                       style={{
@@ -465,11 +494,203 @@ export default function App() {
                                         <Typography style={{ color: p.leader ? "black" : "white" }}>
                                             {p.name}
                                             <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
                                             <br/>
                                             <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
                                         </Typography>
                                     </CardContent>
                                 </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                <Card key={p.playerId}
+                                      className={`player-card ${p.ready ? 'ready-glow' : ''}`}
+                                      style={{
+                                        backgroundColor:
+                                            p.leader ? `rgba(255, 215, 0, 0.8)` : `rgba(120, 38, 153, 0.3)`,
+                                        margin: 1 + `em`
+                                    }}
+                                      >
+                                    <CardContent>
+                                        <Typography style={{ color: p.leader ? "black" : "white" }}>
+                                            {p.name}
+                                            <br/>
+                                            <span style={{color: p.ready ? "green" : "darkred"}} >{p.ready ? "Ready" : "Not ready"} </span>
+                                        </Typography>
+                                    </CardContent>
+                                </Card>
+                                </React.Fragment>
                             ))}
                         </Grid>
                     </div>

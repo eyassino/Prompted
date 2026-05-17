@@ -102,7 +102,7 @@ button:focus-visible {
     border-radius: 10px;
     border: 2px solid purple;
     color: white;
-    background: #2c0e38;
+    background-color: rgba(44, 14, 56, 0.7);
 }
 
 .game-title {
@@ -122,6 +122,14 @@ button:focus-visible {
     color: white;
 }
 
+.guide-body p {
+    margin: 0 0 1em;
+}
+
+.guide-body p:last-child {
+    margin-bottom: 0;
+}
+
 .popup {
     position: fixed;
     z-index: 10;
@@ -136,6 +144,22 @@ button:focus-visible {
     font-size: calc(4px + 2vmin);
     user-select:none !important;
     backdrop-filter: blur(10px);
+}
+
+.popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    margin-bottom: 0.75em;
+}
+
+.popup-title {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    font-size: 1.25em;
+    line-height: 1.2;
 }
 
 .fadeUp {
@@ -247,7 +271,23 @@ button:focus-visible {
 @media (max-width: 1000px) {
 
     .game-title {
-        font-size: 3rem;
+        font-size: 2.5rem;
+    }
+
+    .chat {
+        font-size: calc(1px + 4vmin);
+        width: 100%;
+        height: 30%;
+        bottom: 0;
+    }
+
+    .center-container {
+        width: 100%;
+    }
+
+    .player-card {
+        width: clamp(1rem, 5rem, 10rem);
+        margin: 0.2rem !important;
     }
 
 }

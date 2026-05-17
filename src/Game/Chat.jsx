@@ -67,7 +67,8 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
                             '&:hover fieldset': {
                                 borderColor: "rgb(209, 44, 205)",
                             },
-                        }
+                        },
+                        backgroundColor: "rgba(44, 14, 56, 0.7)"
                     }}
                     type="text"
                     value={newMessage}
@@ -85,7 +86,7 @@ export default function Chat({ roomCode, playerId, initialChat = [] }) {
                 <Button
                     sx={{
                         marginLeft: 1 + "em",
-                        backgroundColor: "#2c0e38",
+                        backgroundColor: "rgba(44, 14, 56, 0.7)",
                         "&:hover": {
                             backgroundColor: "#5a1d73",
                         },
