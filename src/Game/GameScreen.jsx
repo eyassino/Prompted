@@ -56,6 +56,7 @@ export default function GameScreen({
     const [badVote, setBadVote] = useState(false);
     const [waiting, setWaiting] = useState(false);
     const [tickingPlayed, setTickingPlayed] = useState(false);
+    const [isMobile] = useState(window.innerWidth <= 768);
 
     //counters
     const [voteCounts, setVoteCounts] = useState({});
@@ -317,17 +318,18 @@ export default function GameScreen({
                                             borderColor: "rgb(209, 44, 205)",
                                         },
                                     },
-                                    width: "50%"
+                                    width: isMobile ? "75%" : "50%"
                                 }}
                                 color="secondary"
                                 variant="outlined"
-                                style={{marginBottom: 1 + 'em', marginTop: 1 + 'em'}}
+                                style={{marginBottom: isMobile ? 2 + 'em' : 1 + 'em', marginTop: 1 + 'em'}}
                                 value={prompt}
                                 label={altMode ? "Prompt" : "Regular Prompt"}
                                 error={badPrompt}
                                 helperText={badPrompt ? prompt.length > 115 ? "Enter a shorter prompt" : "Enter a prompt" : ""}
                                 slotProps={{ htmlInput: { maxLength: 115 } }}
                                 onChange={(e) => setPrompt(e.target.value)}
+                                multiline
                             />
                             {!altMode ? (
                                 <TextField
@@ -344,7 +346,7 @@ export default function GameScreen({
                                                 borderColor: "rgb(209, 44, 205)",
                                             },
                                         },
-                                        width: "50%"
+                                        width: isMobile ? "75%" : "50%"
                                     }}
                                     color="secondary"
                                     variant="outlined"
@@ -355,9 +357,10 @@ export default function GameScreen({
                                     helperText={badImpPrompt ? impPrompt.length > 115 ? "Enter a shorter prompt" : "Enter an imposter prompt" : ""}
                                     slotProps={{ htmlInput: { maxLength: 115 } }}
                                     onChange={(e) => setImpPrompt(e.target.value)}
+                                    multiline
                                 />
                             ) : null}
-                            <div style={{width: "50%"}}>
+                            <div style={{width: isMobile ? "90%" : "50%"}}>
                                 <Button
                                     sx={{
                                         float: "left"
