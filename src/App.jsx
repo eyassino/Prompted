@@ -187,6 +187,18 @@ export default function App() {
     }, [roomCode]);
 
     useEffect(() => {
+        if (!inRoom) return;
+
+        const onBeforeUnload = (e) => {
+            e.preventDefault();
+            e.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", onBeforeUnload);
+        return () => window.removeEventListener("beforeunload", onBeforeUnload);
+    }, [inRoom]);
+
+    useEffect(() => {
         if (isMobile) return;
         function handleMouseMove(e) {
             const x = (e.clientX / window.innerWidth) * 100;

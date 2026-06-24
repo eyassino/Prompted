@@ -388,8 +388,8 @@ export default function GameScreen({
                 ) : null}
                 {phase === "answer" ? (
                     !waiting ? (
-                    <div style={{width: "40%",marginTop: 4 + "em"}}>
-                        <div style={{width: "100%"}}>
+                    <div style={{width: isMobile ? "75%" : "40%",marginTop: 4 + "em"}}>
+                        <div style={{width: "100%", fontSize : isMobile ? "1.5em" : "1em"}}>
                             {currentPrompt}
                         </div>
                         <div style={{marginTop: 1 + "em"}}>
@@ -418,6 +418,7 @@ export default function GameScreen({
                                 slotProps={{ htmlInput: { maxLength: 115 } }}
                                 onChange={e => setPlayerAnswer(e.target.value)}
                                 label="Your answer"
+                                multiline
                             />
                             <Button
                                 sx={{
@@ -436,7 +437,7 @@ export default function GameScreen({
                 ): null}
                 {phase === "voting" ? (
                     <div className="center-container">
-                        <div style={{border: "2px dashed purple", padding: 1 + "em"}}>
+                        <div style={{border: "2px dashed purple", padding: 1 + "em", marginLeft: 1 + 'em', marginRight: 1 + 'em'}}>
                             <div>{waiting ? "Voted! Waiting for everyone to finish voting..." : "Discuss! who do you think the imposter is?"}</div>
                             <br/>
                             <div><strong>The prompt was:</strong> {currentPrompt} </div>
@@ -477,6 +478,7 @@ export default function GameScreen({
                                         votePlayer(e, "0");
                                 }}
                             >
+                                {altMode ? (
                                 <Badge badgeContent={voteCounts["0"]} color="secondary" anchorOrigin={{ vertical: 'top', horizontal: 'right' }} sx={{minWidth: "100%"}}>
                                     <CardContent>
                                         <Typography sx={{ color: "white", textAlign: "center"}}>
@@ -484,6 +486,7 @@ export default function GameScreen({
                                         </Typography>
                                     </CardContent>
                                 </Badge>
+                                ) : null}
                             </Card>
                         </Stack>
                         {!waiting ? (
